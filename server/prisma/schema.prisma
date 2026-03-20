@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  FREELANCER
+  CLIENT
+  ADMIN
+}
+
+enum JobStatus {
+  OPEN
+  INACTIVE
+  FILED
+}
+
+enum ProposalStatus {
+  PENDING
+  REFUNDED
+  ACCEPTED
+}
+
+enum EscrowStatus {
+  FUNDED
+  RELEASED
+  IN_DISPUTE
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  password     String
+  pan_number   String?
+  aadhaar_hash String?
+  upi_id       String?
+  role         Role       @default(FREELANCER)
+  rating       Float      @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  gigs         Gig[]
+  job_posts    JobPost[]
+  proposals    Proposal[]
+}
+
+model Gig {
+  id          String   @id @default(uuid())
+  owner_id    String
+  owner       User     @relation(fields: [owner_id], references: [id])
+  title       String
+  description String
+  price_tiers Json // JSONB in Postgres
+  category    String // IT/Design/Video etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model JobPost {
+  id          String     @id @default(uuid())
+  client_id   String
+  client      User       @relation(fields: [client_id], references: [id])
+  budget      Float
+  status      JobStatus  @default(OPEN)
+  is_featured Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  proposals   Proposal[]
+}
+
+model Proposal {
+  id            String         @id @default(uuid())
+  job_id        String
+  job           JobPost        @relation(fields: [job_id], references: [id])
+  freelancer_id String
+  freelancer    User           @relation(fields: [freelancer_id], references: [id])
+  credit_cost   Int            @default(1)
+  is_viewed     Boolean        @default(false)
+  status        ProposalStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Milestone {
+  id            String       @id @default(uuid())
+  contract_id   String // Logic: references an order/contract which we can add later
+  amount        Float
+  escrow_status EscrowStatus @default(FUNDED)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model GSTInvoice {
+  id               String   @id @default(uuid())
+  order_id         String
+  hsn_sac_code     String
+  gstin_client     String?
+  gstin_freelancer String?
+  tax_amt          Float
+  createdAt        DateTime @default(now())
+}

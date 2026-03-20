@@ -1,0 +1,279 @@
+openapi: 3.1.0
+info:
+  title: BharatGig API
+  version: 0.1.0
+  description: BharatGig Freelance Marketplace API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: gigs
+    description: Gig/service listings
+  - name: jobs
+    description: Job postings
+  - name: proposals
+    description: Freelancer proposals/bids
+  - name: orders
+    description: Orders and contracts
+  - name: milestones
+    description: Project milestones
+  - name: messages
+    description: Workroom messages
+  - name: reviews
+    description: Ratings and reviews
+  - name: payments
+    description: Escrow and payment operations
+  - name: admin
+    description: Admin operations
+  - name: categories
+    description: Service categories
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /gigs:
+    get:
+      operationId: getGigs
+      tags: [gigs]
+      summary: List gigs with filters
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of gigs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Gig"
+    post:
+      operationId: createGig
+      tags: [gigs]
+      summary: Create a new gig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGigRequest"
+      responses:
+        "201":
+          description: Created gig
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gig"
+  /jobs:
+    get:
+      operationId: getJobs
+      tags: [jobs]
+      summary: List job postings
+      responses:
+        "200":
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Post a new job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "201":
+          description: Created job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+  /payments/create-order:
+    post:
+      operationId: createPaymentOrder
+      tags: [payments]
+      summary: Create a Razorpay order for escrow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number }
+                clientId: { type: string }
+                freelancerId: { type: string }
+                jobId: { type: string }
+      responses:
+        "201":
+          description: Order created
+  /payments/verify:
+    post:
+      operationId: verifyPayment
+      tags: [payments]
+      summary: Verify Razorpay signature and escrow funds
+      responses:
+        "200":
+          description: Payment verified
+  /payments/release/{escrowId}:
+    post:
+      operationId: releaseFunds
+      tags: [payments]
+      summary: Release escrowed funds to freelancer
+      parameters:
+        - name: escrowId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Funds released
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [client, freelancer, admin]
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string }
+        role: { type: string, enum: [client, freelancer] }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+    AuthResponse:
+      type: object
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        token: { type: string }
+    Gig:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        price: { type: number }
+        category: { type: string }
+        userId: { type: string }
+    CreateGigRequest:
+      type: object
+      required: [title, description, price, category]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        price: { type: number }
+        category: { type: string }
+    Job:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        budget: { type: number }
+        clientId: { type: string }
+    CreateJobRequest:
+      type: object
+      required: [title, description, budget]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        budget: { type: number }
