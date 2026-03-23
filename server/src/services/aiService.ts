@@ -8,13 +8,15 @@ if (!API_KEY) {
   console.warn('GEMINI_API_KEY is not defined in .env. AI features will not work.');
 }
 
-const genAI = new GoogleGenerativeAI(API_KEY);
+const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 
 export class AIService {
-  private model;
+  private model: any = null;
 
   constructor() {
-    this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    if (genAI) {
+      this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    }
   }
 
   async generateJobDescription(title: string, category: string): Promise<string> {

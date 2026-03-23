@@ -63,4 +63,4 @@ const transactionSchema = new mongoose.Schema({
 
 export { walletSchema };
 export const Wallet = mongoose.model('Wallet', walletSchema);
-export const Transaction = mongoose.model('Transaction', transactionSchema);
+export const Transaction = mongoose.model('WalletTransaction', transactionSchema);

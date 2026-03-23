@@ -7,7 +7,11 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret',
 });
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.trim() !== "" 
+  ? process.env.STRIPE_SECRET_KEY 
+  : 'sk_test_placeholder';
+
+const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2023-10-16' as any,
 });
 

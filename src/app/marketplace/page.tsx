@@ -156,11 +156,11 @@ export default function MarketplacePage() {
       </section>
 
       {/* 3. MAIN LAYOUT */}
-      <main className="max-w-7xl mx-auto px-6 py-12">
-         <div className="flex flex-col lg:flex-row gap-10">
+      <main className="max-w-[1536px] mx-auto px-8 py-12">
+         <div className="flex flex-col lg:flex-row xl:gap-14 gap-8">
             
-            {/* LEFT SIDEBAR — 280px wide, sticky */}
-            <aside className="hidden lg:block w-[280px] shrink-0">
+            {/* LEFT SIDEBAR — 260px wide, sticky */}
+            <aside className="hidden lg:block w-[260px] shrink-0">
                <div className="sticky top-28 space-y-10">
 
                   {/* Category Filter */}
@@ -298,24 +298,16 @@ export default function MarketplacePage() {
                     </div>
                   )}
                </section>
-
-               {/* Pagination */}
-               {!loading && jobs.length > 0 && (
-                  <div className="pt-12 flex justify-center items-center gap-3">
-                     <button className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-slate-200 text-slate-400 hover:text-slate-900 hover:border-slate-300 transition-all font-bold">
-                       <ChevronRight size={18} className="rotate-180" />
-                     </button>
-                     <span className="w-12 h-12 flex items-center justify-center rounded-xl bg-slate-900 text-white font-black text-[15px] shadow-sm shadow-slate-900/20">1</span>
-                     <span className="w-12 h-12 flex items-center justify-center rounded-xl text-slate-500 font-bold text-[15px] hover:bg-slate-100 cursor-pointer transition-colors">2</span>
-                     <span className="w-12 h-12 flex items-center justify-center rounded-xl text-slate-500 font-bold text-[15px] hover:bg-slate-100 cursor-pointer transition-colors">3</span>
-                     <button className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-all font-bold">
-                       <ChevronRight size={18} />
-                     </button>
-                  </div>
-               )}
             </div>
-         </div>
-      </main>
+
+             {/* 5. RIGHT SIDEBAR — Strategic Ads */}
+             <aside className="hidden xl:block w-[320px] shrink-0">
+                <div className="sticky top-28 h-fit">
+                   <AdsSidebar />
+                </div>
+             </aside>
+          </div>
+       </main>
 
       {/* MOBILE FILTERS DRAWER */}
       <AnimatePresence>
