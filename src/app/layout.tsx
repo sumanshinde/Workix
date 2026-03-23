@@ -3,6 +3,7 @@ import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { VideoRecorderWidget } from '@/components/VideoRecorderWidget';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', weight: ['400', '500', '600', '700', '800'] });
 const poppins = Poppins({ subsets: ['latin'], variable: '--font-poppins', weight: ['600', '700'] });
@@ -28,7 +29,9 @@ export default function RootLayout({
         </div>
 
         <Providers>
-          <main className="relative z-10">{children}</main>
+          <ErrorBoundary>
+            <main className="relative z-10">{children}</main>
+          </ErrorBoundary>
           <VideoRecorderWidget />
         </Providers>
       </body>

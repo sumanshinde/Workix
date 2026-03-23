@@ -21,6 +21,7 @@ function CheckoutContent() {
   const jobId = searchParams.get('jobId');
   const freelancerId = searchParams.get('freelancerId');
   const [user, setUser] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -48,7 +49,7 @@ function CheckoutContent() {
       });
 
       const options = {
-        key: 'rzp_test_placeholder',
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY || 'rzp_test_placeholder',
         amount: data.amount,
         currency: data.currency,
         name: 'BharatGig Escrow',
@@ -74,9 +75,10 @@ function CheckoutContent() {
       };
 
       displayRazorpay(options);
-    } catch (err) {
+    } catch (err: any) {
       analyticsAPI.track('checkout_error', 'payment', { error: String(err) });
       console.error('Payment Error:', err);
+      setError(err?.message || 'Payment initiation failed. Please check your connection or try a different method.');
     }
   };
 

@@ -45,6 +45,12 @@ const userSchema = new mongoose.Schema({
   // Security & Fraud Control
   riskScore: { type: Number, default: 0 },
   isFlagged: { type: Boolean, default: false },
+
+  // Performance Metrics (Fixing TS Errors)
+  avgResponseTime: { type: Number, default: 60 },
+  completedJobs: { type: Number, default: 0 },
+  trustScore: { type: Number, default: 75 },
+  hourlyRate: { type: Number, default: 0 },
 }, { timestamps: true });
 
 export default mongoose.model('User', userSchema);

@@ -74,12 +74,17 @@ app.use(cors({
   origin: [CLIENT_URL, 'http://localhost:3001'],
   credentials: true,
 }));
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ 
+  limit: '10kb',
+  verify: (req: any, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
-// app.use(mongoSanitize());
-// app.use(xss());
-// app.use(hpp());
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp());
 app.use(compression());
 
 // Global API Rate Limiting
@@ -130,9 +135,19 @@ app.get('/', (req, res) => {
 // Error handling
 app.use(errorHandler);
 
-mongoose.connect(MONGO_URI)
+const mongooseOptions = {
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  family: 4 // Use IPv4, skip trying IPv6
+};
+
+mongoose.connect(MONGO_URI, mongooseOptions)
   .then(() => console.log('Connected to MongoDB Production Instance'))
-  .catch((err) => console.error('MongoDB Connection Crash:', err));
+  .catch((err) => {
+    console.error('MongoDB Connection Crash:', err);
+    process.exit(1); // Fallback for production: exit and let orchestrator restart
+  });
 
 server.listen(PORT, () => {
   console.log(`[Prod-Ready] Server cluster running on port ${PORT}`);
