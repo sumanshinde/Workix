@@ -14,7 +14,9 @@ export default function ReferralPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await referralAPI.getStats();
+        const stored = localStorage.getItem('user');
+        const userId = stored ? JSON.parse(stored).id : 'anonymous';
+        const res = await referralAPI.getStats(userId);
         setData(res);
       } catch (err) {
         console.error(err);
