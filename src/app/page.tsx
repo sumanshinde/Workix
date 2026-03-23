@@ -5,117 +5,262 @@ import { motion } from 'framer-motion';
 import { 
   Zap, TrendingUp, Users, CheckCircle2, ArrowRight, Star, 
   Sparkles, ShieldCheck, Globe, Shield, BriefcaseIcon, 
-  Cpu, MousePointer2, CreditCard, Lock
+  Cpu, MousePointer2, CreditCard, Lock, Clock, Briefcase,
+  Timer, ChevronRight
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button, Card } from '../components/ui';
+
+/* ── Fade-in animation variants ── */
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i: number = 0) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+  })
+};
+
+const stagger = {
+  visible: { transition: { staggerChildren: 0.12 } }
+};
 
 export default function Home() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-white font-manrope selection:bg-blue-100 selection:text-blue-600 w-full overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#fafbff] font-sans selection:bg-blue-100 selection:text-blue-700 w-full overflow-x-hidden relative">
       
+      {/* ── AMBIENT BACKGROUND ── */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-20%] left-[-15%] w-[700px] h-[700px] bg-gradient-to-br from-blue-500/[0.07] to-indigo-500/[0.04] rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-15%] w-[600px] h-[600px] bg-gradient-to-tl from-violet-500/[0.06] to-blue-500/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute top-[40%] right-[20%] w-[400px] h-[400px] bg-gradient-to-br from-emerald-500/[0.03] to-cyan-500/[0.02] rounded-full blur-[100px]" />
+      </div>
+
       {/* ── NAVIGATION ── */}
-      <nav className="fixed top-0 w-full z-[100] h-20 px-8 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between">
+      <nav className="fixed top-0 w-full z-[100] h-[72px] px-6 lg:px-10 bg-white/70 backdrop-blur-2xl border-b border-slate-900/[0.04] flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => router.push('/')}>
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-sm shadow-slate-900/10 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 bg-gradient-to-br from-slate-900 to-slate-700 rounded-xl flex items-center justify-center text-white font-extrabold text-[10px] shadow-lg shadow-slate-900/20 group-hover:scale-110 transition-transform duration-300">
               BG
             </div>
-            <span className="text-xl font-black tracking-tighter text-slate-900 italic uppercase">BharatGig</span>
+            <span className="text-lg font-extrabold tracking-tight text-slate-900">BharatGig</span>
           </div>
           
-          <div className="hidden lg:flex items-center gap-10">
+          <div className="hidden lg:flex items-center gap-8">
              {['Find Talent', 'Find Work', 'AI Matching', 'Pricing'].map(item => (
-                <a key={item} href="#" className="text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">{item}</a>
+                <a key={item} href="#" className="text-[13px] font-semibold text-slate-500 hover:text-slate-900 transition-colors duration-200">{item}</a>
              ))}
           </div>
 
-          <div className="flex items-center gap-4">
-             <button onClick={() => router.push('/login')} className="text-[11px] font-black uppercase tracking-widest text-slate-900 hover:opacity-70 transition-opacity px-6">Login</button>
-             <Button onClick={() => router.push('/register')} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-500/20">
-                Join Now
+          <div className="flex items-center gap-3">
+             <button onClick={() => router.push('/login')} className="text-[13px] font-semibold text-slate-700 hover:text-slate-900 transition-colors px-5 py-2.5 rounded-xl hover:bg-slate-50">Login</button>
+             <Button onClick={() => router.push('/register')} className="h-10 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold text-[13px] shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 hover:scale-[1.02] border-0">
+                Get Started Free
              </Button>
           </div>
       </nav>
 
       {/* ── HERO SECTION ── */}
-      <section className="relative pt-44 pb-32 px-8">
-         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <section className="relative pt-36 lg:pt-44 pb-20 lg:pb-32 px-6 lg:px-10 z-10">
+         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+            
+            {/* LEFT: Copy */}
             <motion.div 
-               initial={{ opacity: 0, x: -30 }} 
-               animate={{ opacity: 1, x: 0 }} 
-               className="space-y-10"
+               initial="hidden"
+               animate="visible"
+               variants={stagger}
+               className="space-y-8"
             >
-               <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-                  <Sparkles size={14} /> AI-Powered Marketplace
-               </div>
-               <h1 className="text-7xl md:text-8xl font-black text-slate-900 leading-[0.85] tracking-tighter">
-                  HIRE TOP <br />
-                  <span className="text-blue-600 italic">FREELANCERS</span> <br />
-                  IN 2 MINS.
-               </h1>
-               <p className="text-xl font-medium text-slate-500 max-w-lg leading-relaxed italic">
-                  Smart matching, secure payments, and zero-hassle hiring. The only platform that guarantees results using AI.
-               </p>
-               <div className="flex flex-col sm:flex-row gap-4">
-                  <Button onClick={() => router.push('/post-job')} className="h-16 px-10 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3 group">
-                     Post Job Free <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+               {/* Badge */}
+               <motion.div variants={fadeUp} custom={0}
+                  className="inline-flex items-center gap-2.5 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 rounded-full text-[12px] font-semibold border border-blue-100/60"
+               >
+                  <Sparkles size={14} className="text-blue-500" /> AI-Powered Freelance Marketplace
+               </motion.div>
+
+               {/* Headline */}
+               <motion.h1 variants={fadeUp} custom={1}
+                  className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-extrabold text-slate-900 leading-[1.08] tracking-tight"
+               >
+                  Get Work Done in{' '}
+                  <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">2 Minutes</span>
+                  {' '}— We Find the Right Freelancer for You
+               </motion.h1>
+
+               {/* Subtext */}
+               <motion.p variants={fadeUp} custom={2}
+                  className="text-lg text-slate-500 max-w-xl leading-relaxed font-normal"
+               >
+                  No searching. No hiring headache. Just results powered by AI. Post your job — we handle the rest.
+               </motion.p>
+
+               {/* CTAs */}
+               <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <Button onClick={() => router.push('/post-job')} 
+                     className="h-14 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-semibold text-[15px] shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center gap-2.5 group transition-all duration-300 hover:scale-[1.02] border-0"
+                  >
+                     Get My Freelancer Now <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                   </Button>
-                  <Button variant="ghost" className="h-16 px-10 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-900 border-2 border-slate-100 hover:bg-slate-50">
-                     Explore Talent
+                  <Button variant="ghost" onClick={() => router.push('/marketplace')} 
+                     className="h-14 px-8 rounded-2xl font-semibold text-[15px] text-slate-700 bg-white border border-slate-200/80 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md transition-all duration-300 shadow-sm"
+                  >
+                     Browse Talent
                   </Button>
-               </div>
+               </motion.div>
                
-               {/* SOCIAL PROOF */}
-               <div className="flex items-center gap-8 pt-10 border-t border-slate-50">
-                  <div className="space-y-1">
-                     <div className="text-2xl font-black text-slate-900 italic">100+</div>
-                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trusted Clients</div>
+               {/* Trust Bar */}
+               <motion.div variants={fadeUp} custom={4}
+                  className="flex flex-wrap items-center gap-6 sm:gap-8 pt-8 border-t border-slate-100/80"
+               >
+                  <div className="flex items-center gap-2.5">
+                     <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+                        <Star size={16} className="text-amber-500 fill-amber-500" />
+                     </div>
+                     <div>
+                        <div className="text-lg font-extrabold text-slate-900 leading-tight">100+</div>
+                        <div className="text-[11px] font-medium text-slate-400">Trusted Clients</div>
+                     </div>
                   </div>
-                  <div className="w-px h-10 bg-slate-100" />
-                  <div className="space-y-1">
-                     <div className="text-2xl font-black text-slate-900 italic">₹10L+</div>
-                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Processed</div>
+                  <div className="w-px h-10 bg-slate-100 hidden sm:block" />
+                  <div className="flex items-center gap-2.5">
+                     <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+                        <TrendingUp size={16} className="text-emerald-500" />
+                     </div>
+                     <div>
+                        <div className="text-lg font-extrabold text-slate-900 leading-tight">₹10L+</div>
+                        <div className="text-[11px] font-medium text-slate-400">Work Completed</div>
+                     </div>
                   </div>
-                  <div className="w-px h-10 bg-slate-100" />
-                  <div className="flex -space-x-3">
-                     {[1,2,3,4].map(i => (
-                        <div key={i} className="w-10 h-10 rounded-full border-4 border-white bg-slate-100 overflow-hidden">
-                           <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i * 123}`} alt="user" />
-                        </div>
-                     ))}
+                  <div className="w-px h-10 bg-slate-100 hidden sm:block" />
+                  <div className="flex items-center gap-2.5">
+                     <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                        <Zap size={16} className="text-blue-500" />
+                     </div>
+                     <div>
+                        <div className="text-lg font-extrabold text-slate-900 leading-tight">4 mins</div>
+                        <div className="text-[11px] font-medium text-slate-400">Avg. Hire Time</div>
+                     </div>
                   </div>
-               </div>
+               </motion.div>
             </motion.div>
 
+            {/* RIGHT: Premium Freelancer Card */}
             <motion.div 
-               initial={{ opacity: 0, scale: 0.9 }} 
-               animate={{ opacity: 1, scale: 1 }}
+               initial={{ opacity: 0, y: 40, scale: 0.95 }} 
+               animate={{ opacity: 1, y: 0, scale: 1 }}
+               transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
                className="relative"
             >
-               <div className="aspect-square bg-blue-600 rounded-[4rem] rotate-3 relative overflow-hidden shadow-2xl group flex items-center justify-center p-12">
-                  <div className="absolute inset-0 bg-white/10 group-hover:bg-transparent transition-colors" />
-                  <div className="bg-white rounded-[3rem] p-10 shadow-2xl space-y-8 relative -rotate-3 hover:rotate-0 transition-transform duration-500 w-full">
-                     <div className="flex items-center justify-between">
-                        <div className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[8px] font-black uppercase tracking-widest">🔥 Best Match Found</div>
-                        <div className="text-xs font-black text-slate-900 italic">98% Match</div>
-                     </div>
-                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-3xl bg-slate-100 overflow-hidden">
-                           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Felix" />
+               {/* Glow ring */}
+               <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-violet-500/10 rounded-[3rem] blur-2xl opacity-60" />
+
+               {/* Outer container */}
+               <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-[2.5rem] p-1 shadow-2xl shadow-blue-500/20 hover:shadow-blue-500/30 transition-shadow duration-500">
+                  <div className="bg-gradient-to-br from-blue-600/90 to-indigo-700/90 rounded-[2.4rem] p-6 sm:p-8 relative overflow-hidden">
+                     
+                     {/* BG pattern */}
+                     <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-white/[0.04] rounded-full -translate-y-1/2 translate-x-1/2" />
+                     <div className="absolute bottom-0 left-0 w-[150px] h-[150px] bg-white/[0.03] rounded-full translate-y-1/2 -translate-x-1/2" />
+
+                     {/* Inner white card */}
+                     <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-2xl shadow-black/10 relative space-y-6 hover:-translate-y-1 transition-transform duration-500">
+                        
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full border border-blue-100/50">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                              <span className="text-[11px] font-semibold text-blue-600">Best Match Found</span>
+                           </div>
+                           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-full">
+                              <Sparkles size={12} className="text-emerald-500" />
+                              <span className="text-[11px] font-bold text-emerald-600">98% Match</span>
+                           </div>
                         </div>
-                        <div>
-                           <div className="text-xl font-black text-slate-900 uppercase italic">Felix D.</div>
-                           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full-Stack Engineer</div>
+
+                        {/* Profile */}
+                        <div className="flex items-center gap-4">
+                           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden ring-2 ring-slate-100 flex-shrink-0">
+                              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Felix" loading="lazy" />
+                           </div>
+                           <div className="min-w-0">
+                              <div className="text-lg font-extrabold text-slate-900 tracking-tight">Felix D.</div>
+                              <div className="text-[12px] font-medium text-slate-400">Full-Stack Engineer</div>
+                           </div>
                         </div>
-                     </div>
-                     <div className="space-y-4">
-                        <div className="h-1 bg-slate-50 rounded-full overflow-hidden">
-                           <div className="h-full bg-blue-600 w-[98%]" />
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-3 gap-3">
+                           <div className="bg-slate-50/80 rounded-xl p-3 text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                 <Star size={12} className="text-amber-500 fill-amber-500" />
+                                 <span className="text-sm font-bold text-slate-900">4.9</span>
+                              </div>
+                              <div className="text-[10px] font-medium text-slate-400">Rating</div>
+                           </div>
+                           <div className="bg-slate-50/80 rounded-xl p-3 text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                 <Briefcase size={12} className="text-blue-500" />
+                                 <span className="text-sm font-bold text-slate-900">50+</span>
+                              </div>
+                              <div className="text-[10px] font-medium text-slate-400">Projects</div>
+                           </div>
+                           <div className="bg-slate-50/80 rounded-xl p-3 text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                 <Clock size={12} className="text-emerald-500" />
+                                 <span className="text-sm font-bold text-slate-900">10m</span>
+                              </div>
+                              <div className="text-[10px] font-medium text-slate-400">Response</div>
+                           </div>
                         </div>
-                        <Button className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Hire Instantly</Button>
+
+                        {/* Animated Match Bar */}
+                        <div className="space-y-2">
+                           <div className="flex justify-between text-[11px] font-semibold">
+                              <span className="text-slate-400">AI Match Score</span>
+                              <span className="text-blue-600">98%</span>
+                           </div>
+                           <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <motion.div 
+                                 initial={{ width: 0 }}
+                                 animate={{ width: '98%' }}
+                                 transition={{ duration: 1.5, delay: 0.8, ease: 'easeOut' }}
+                                 className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full relative"
+                              >
+                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+                              </motion.div>
+                           </div>
+                        </div>
+
+                        {/* CTA */}
+                        <Button className="w-full h-12 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white rounded-xl font-semibold text-sm shadow-lg shadow-slate-900/20 hover:shadow-slate-900/30 transition-all duration-300 hover:scale-[1.01] border-0">
+                           Hire Instantly <ChevronRight size={16} className="ml-1" />
+                        </Button>
                      </div>
+
+                     {/* Floating mini cards */}
+                     <motion.div 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 1.2, duration: 0.5 }}
+                        className="absolute -left-4 bottom-[30%] bg-white rounded-xl px-3 py-2 shadow-xl shadow-black/10 flex items-center gap-2"
+                     >
+                        <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center">
+                           <CheckCircle2 size={12} className="text-emerald-500" />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-700 whitespace-nowrap">Verified Pro</span>
+                     </motion.div>
+
+                     <motion.div 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 1.4, duration: 0.5 }}
+                        className="absolute -right-3 top-[25%] bg-white rounded-xl px-3 py-2 shadow-xl shadow-black/10 flex items-center gap-2"
+                     >
+                        <div className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center">
+                           <Star size={12} className="text-amber-500 fill-amber-500" />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-700 whitespace-nowrap">Top Rated</span>
+                     </motion.div>
                   </div>
                </div>
             </motion.div>
@@ -123,162 +268,229 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="py-32 bg-slate-50/50 px-8">
-         <div className="max-w-7xl mx-auto space-y-20">
-            <div className="text-center space-y-4">
-               <div className="text-[12px] font-black text-blue-600 uppercase tracking-[0.4em]">The Velocity process</div>
-               <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic uppercase">Hire in 3 Steps</h2>
-            </div>
+      <section className="py-24 lg:py-32 px-6 lg:px-10 relative z-10">
+         <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}
+            variants={stagger}
+            className="max-w-7xl mx-auto space-y-16"
+         >
+            <motion.div variants={fadeUp} className="text-center space-y-4">
+               <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-[12px] font-semibold border border-blue-100/50">
+                  <Cpu size={14} /> The Process
+               </div>
+               <h2 className="text-3xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">Hire in 3 Simple Steps</h2>
+               <p className="text-lg text-slate-500 max-w-xl mx-auto">From posting to hiring — in under 5 minutes.</p>
+            </motion.div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                {[
-                  { step: '01', title: 'Post Job', desc: 'Describe your project and budget in seconds.', icon: <MousePointer2 className="text-blue-600" /> },
-                  { step: '02', title: 'Get AI Matches', desc: 'Our AI ranks the best candidates instantly.', icon: <Cpu className="text-purple-600" /> },
-                  { step: '03', title: 'Hire Instantly', desc: 'One-click contract & secure escrow payment.', icon: <Zap className="text-amber-600" /> }
+                  { step: '01', title: 'Post Your Job', desc: 'Describe your project, set a budget, and let AI do the heavy lifting.', icon: <MousePointer2 size={22} />, iconBg: 'bg-blue-50 text-blue-600' },
+                  { step: '02', title: 'AI Finds Matches', desc: 'Our algorithm ranks the best-fit freelancers based on skills, speed, and ratings.', icon: <Cpu size={22} />, iconBg: 'bg-indigo-50 text-indigo-600' },
+                  { step: '03', title: 'Hire & Pay Securely', desc: 'One-click contract creation with escrow-protected payments.', icon: <Zap size={22} />, iconBg: 'bg-violet-50 text-violet-600' }
                ].map((item, i) => (
-                  <div key={i} className="space-y-6 group">
-                     <div className="text-6xl font-black text-slate-100 group-hover:text-blue-100 transition-colors italic">{item.step}</div>
-                     <div className="p-4 bg-white rounded-2xl shadow-sm w-fit group-hover:scale-110 transition-transform">{item.icon}</div>
-                     <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic">{item.title}</h3>
-                     <p className="font-medium text-slate-500 leading-relaxed italic">{item.desc}</p>
-                  </div>
+                  <motion.div key={i} variants={fadeUp} custom={i}
+                     className="relative bg-white rounded-2xl p-8 space-y-5 group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100/80 shadow-sm"
+                  >
+                     <div className="flex items-center justify-between">
+                        <div className={`w-12 h-12 rounded-xl ${item.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                           {item.icon}
+                        </div>
+                        <span className="text-5xl font-extrabold text-slate-100/80 group-hover:text-blue-50 transition-colors">{item.step}</span>
+                     </div>
+                     <h3 className="text-xl font-bold text-slate-900 tracking-tight">{item.title}</h3>
+                     <p className="text-[14px] text-slate-500 leading-relaxed">{item.desc}</p>
+                  </motion.div>
                ))}
             </div>
-         </div>
+         </motion.div>
       </section>
 
       {/* ── FEATURES ── */}
-      <section className="py-32 px-8">
-         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
-            <div className="space-y-12">
+      <section className="py-24 lg:py-32 px-6 lg:px-10 bg-slate-50/50 relative z-10">
+         <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}
+            variants={stagger}
+            className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center"
+         >
+            <motion.div variants={fadeUp} className="space-y-10">
                <div className="space-y-4">
-                 <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic uppercase leading-tight">Everything You Need to Scale Your Team.</h2>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-[12px] font-semibold border border-indigo-100/50">
+                     <ShieldCheck size={14} /> Why BharatGig
+                  </div>
+                  <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">Everything You Need to Scale Your Team.</h2>
+                  <p className="text-slate-500 text-base max-w-md">Built for speed, trust, and global payments. Every feature is designed to get results faster.</p>
                </div>
-               <div className="grid grid-cols-2 gap-10">
-                  <div className="space-y-4">
-                     <div className="p-3 bg-blue-50 text-blue-600 w-fit rounded-xl"><Sparkles size={20} /></div>
-                     <h4 className="font-black text-slate-900 uppercase italic text-sm">AI Matching</h4>
-                     <p className="text-xs font-medium text-slate-500 leading-relaxed italic">Proprietary algorithm that finds talent based on fit, not just keywords.</p>
-                  </div>
-                  <div className="space-y-4">
-                     <div className="p-3 bg-emerald-50 text-emerald-600 w-fit rounded-xl"><Lock size={20} /></div>
-                     <h4 className="font-black text-slate-900 uppercase italic text-sm">Escrow Secure</h4>
-                     <p className="text-xs font-medium text-slate-500 leading-relaxed italic">Funds are only released when you are 100% satisfied with the work.</p>
-                  </div>
-                  <div className="space-y-4">
-                     <div className="p-3 bg-amber-50 text-amber-600 w-fit rounded-xl"><Globe size={20} /></div>
-                     <h4 className="font-black text-slate-900 uppercase italic text-sm">Global Pay</h4>
-                     <p className="text-xs font-medium text-slate-500 leading-relaxed italic">Pay in USD, EUR, or INR via Stripe & Razorpay seamlessly.</p>
-                  </div>
-                  <div className="space-y-4">
-                     <div className="p-3 bg-purple-50 text-purple-600 w-fit rounded-xl"><ShieldCheck size={20} /></div>
-                     <h4 className="font-black text-slate-900 uppercase italic text-sm">Dispute Tribunal</h4>
-                     <p className="text-xs font-medium text-slate-500 leading-relaxed italic">Professional admin review for edge cases and total peace of mind.</p>
-                  </div>
-               </div>
-            </div>
-            <div className="bg-slate-900 rounded-[4rem] p-16 text-white space-y-10 relative overflow-hidden shadow-2xl shadow-slate-900/50">
-               <div className="absolute top-0 right-0 p-12 opacity-5"><Zap size={200} /></div>
-               <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-tight">Join the next-gen of <span className="text-blue-500">Global Hiring</span>.</h3>
-               <ul className="space-y-6">
-                  {['Zero Platform Fees for First Hiring', 'Aadhaar Verified Talent Pool', 'Instant UPI Payouts'].map(text => (
-                     <li key={text} className="flex items-center gap-4 text-sm font-black uppercase tracking-widest">
-                        <CheckCircle2 className="text-blue-500" size={20} /> {text}
-                     </li>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {[
+                     { icon: <Sparkles size={18} />, title: 'AI Matching', desc: 'Smart algorithm finds talent by fit, not just keywords.', iconBg: 'bg-blue-50 text-blue-600' },
+                     { icon: <Lock size={18} />, title: 'Escrow Secure', desc: 'Funds released only when you are 100% satisfied.', iconBg: 'bg-emerald-50 text-emerald-600' },
+                     { icon: <Globe size={18} />, title: 'Global Pay', desc: 'Pay in USD, EUR, or INR via Stripe & Razorpay.', iconBg: 'bg-amber-50 text-amber-600' },
+                     { icon: <ShieldCheck size={18} />, title: 'Dispute Resolution', desc: 'Professional admin review for total peace of mind.', iconBg: 'bg-purple-50 text-purple-600' }
+                  ].map((f, i) => (
+                     <motion.div key={i} variants={fadeUp} custom={i}
+                        className="bg-white rounded-2xl p-6 space-y-3 border border-slate-100/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                     >
+                        <div className={`w-10 h-10 rounded-xl ${f.iconBg} flex items-center justify-center`}>{f.icon}</div>
+                        <h4 className="font-bold text-slate-900 text-[15px]">{f.title}</h4>
+                        <p className="text-[13px] text-slate-500 leading-relaxed">{f.desc}</p>
+                     </motion.div>
                   ))}
-               </ul>
-               <Button onClick={() => router.push('/register')} className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20">Create My Account</Button>
-            </div>
-         </div>
+               </div>
+            </motion.div>
+            
+            <motion.div variants={fadeUp} custom={2}
+               className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-10 lg:p-14 text-white space-y-8 relative overflow-hidden shadow-2xl shadow-slate-900/40"
+            >
+               <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-blue-500/[0.06] rounded-full -translate-y-1/2 translate-x-1/2" />
+               <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-indigo-500/[0.06] rounded-full translate-y-1/2 -translate-x-1/2" />
+               
+               <div className="relative z-10 space-y-8">
+                  <h3 className="text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight">Join the next-gen of{' '}
+                     <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Global Hiring</span>.
+                  </h3>
+                  <ul className="space-y-5">
+                     {['Zero Platform Fees for First Hire', 'Aadhaar Verified Talent Pool', 'Instant UPI Payouts'].map(text => (
+                        <li key={text} className="flex items-center gap-3.5">
+                           <div className="w-7 h-7 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                              <CheckCircle2 className="text-blue-400" size={15} />
+                           </div>
+                           <span className="text-sm font-medium text-slate-300">{text}</span>
+                        </li>
+                     ))}
+                  </ul>
+                  <Button onClick={() => router.push('/register')} 
+                     className="w-full h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl font-semibold text-sm shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 border-0"
+                  >
+                     Create Free Account <ArrowRight size={16} className="ml-2" />
+                  </Button>
+               </div>
+            </motion.div>
+         </motion.div>
       </section>
 
       {/* ── ENTERPRISE LEAD CAPTURE ── */}
-      <section className="py-32 bg-slate-100/50 px-8">
-         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <div className="space-y-6">
-               <div className="text-[12px] font-black text-blue-600 uppercase tracking-[0.4em]">Enterprise Scale</div>
-               <h2 className="text-6xl font-black text-slate-900 tracking-tighter italic uppercase leading-[0.85]">
-                  NEED A <br />
-                  <span className="text-blue-600">CUSTOM SQUAD?</span>
+      <section className="py-24 lg:py-32 px-6 lg:px-10 relative z-10">
+         <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}
+            variants={stagger}
+            className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center"
+         >
+            <motion.div variants={fadeUp} className="space-y-6">
+               <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 text-violet-600 rounded-full text-[12px] font-semibold border border-violet-100/50">
+                  <Users size={14} /> Enterprise Scale
+               </div>
+               <h2 className="text-3xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                  Need a{' '}
+                  <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Custom Squad?</span>
                </h2>
-               <p className="text-xl font-medium text-slate-500 max-w-lg leading-relaxed italic">
+               <p className="text-lg text-slate-500 max-w-lg leading-relaxed">
                   Looking to hire 10+ freelancers or need custom enterprise compliance? Our growth team will build your squad manually.
                </p>
-               <div className="flex items-center gap-6 pt-10 border-t border-slate-200">
-                  <div className="flex -space-x-3">
+               <div className="flex items-center gap-5 pt-8 border-t border-slate-100">
+                  <div className="flex -space-x-2.5">
                      {[1,2,3].map(i => (
-                        <div key={i} className="w-12 h-12 rounded-full border-4 border-white bg-slate-100 overflow-hidden shadow-sm">
-                           <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=expert${i}`} alt="expert" />
+                        <div key={i} className="w-11 h-11 rounded-full border-[3px] border-white bg-slate-100 overflow-hidden shadow-sm">
+                           <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=expert${i}`} alt="expert" loading="lazy" />
                         </div>
                      ))}
                   </div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed italic">"Our expert concierge team <br /> is ready to assist."</div>
+                  <p className="text-[13px] font-medium text-slate-400 leading-snug">Our expert concierge team<br />is ready to assist.</p>
                </div>
-            </div>
+            </motion.div>
 
-            <Card className="p-10 border-0 bg-white shadow-2xl rounded-[3rem] space-y-8">
-               <div className="space-y-2">
-                  <h3 className="text-2xl font-black text-slate-900 italic uppercase">Inquiry Form</h3>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Get a response within 2 hours.</div>
-               </div>
-               <form onSubmit={async (e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const data = Object.fromEntries(formData);
-                  try {
-                    const { leadsAPI } = require('../services/api');
-                    await leadsAPI.submit(data);
-                    alert('Inquiry sent! Our team will contact you shortly.');
-                    (e.target as any).reset();
-                  } catch (err) {
-                    alert('Submission failed');
-                  }
-               }} className="space-y-4">
-                  <input name="name" placeholder="Contact Name" required className="w-full h-14 px-6 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:ring-4 ring-blue-500/10 outline-none transition-all font-manrope" />
-                  <div className="grid grid-cols-2 gap-4">
-                     <input name="email" type="email" placeholder="Business Email" required className="w-full h-14 px-6 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:ring-4 ring-blue-500/10 outline-none transition-all font-manrope" />
-                     <input name="company" placeholder="Company Name" className="w-full h-14 px-6 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:ring-4 ring-blue-500/10 outline-none transition-all font-manrope" />
+            <motion.div variants={fadeUp} custom={1}>
+               <Card className="p-8 lg:p-10 border border-slate-100/80 bg-white shadow-xl shadow-slate-900/[0.04] rounded-3xl space-y-7">
+                  <div className="space-y-1.5">
+                     <h3 className="text-xl font-bold text-slate-900">Enterprise Inquiry</h3>
+                     <p className="text-[13px] text-slate-400 font-medium">Get a response within 2 hours.</p>
                   </div>
-                  <textarea name="requirement" placeholder="Project Requirements..." required className="w-full h-32 p-6 bg-slate-50 border border-slate-100 rounded-[2rem] text-sm font-medium focus:ring-4 ring-blue-500/10 outline-none transition-all font-manrope resize-none" />
-                  <Button type="submit" className="w-full h-16 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20">Send Inquiry</Button>
-               </form>
-            </Card>
-         </div>
+                  <form onSubmit={async (e) => {
+                     e.preventDefault();
+                     const formData = new FormData(e.currentTarget);
+                     const data = Object.fromEntries(formData);
+                     try {
+                       const { leadsAPI } = require('../services/api');
+                       await leadsAPI.submit(data);
+                       alert('Inquiry sent! Our team will contact you shortly.');
+                       (e.target as any).reset();
+                     } catch (err) {
+                       alert('Submission failed');
+                     }
+                  }} className="space-y-4">
+                     <input name="name" placeholder="Contact Name" required className="w-full h-13 px-5 bg-slate-50/80 border border-slate-100 rounded-xl text-sm font-medium focus:ring-4 ring-blue-500/10 focus:border-blue-200 outline-none transition-all placeholder:text-slate-300" />
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input name="email" type="email" placeholder="Business Email" required className="w-full h-13 px-5 bg-slate-50/80 border border-slate-100 rounded-xl text-sm font-medium focus:ring-4 ring-blue-500/10 focus:border-blue-200 outline-none transition-all placeholder:text-slate-300" />
+                        <input name="company" placeholder="Company Name" className="w-full h-13 px-5 bg-slate-50/80 border border-slate-100 rounded-xl text-sm font-medium focus:ring-4 ring-blue-500/10 focus:border-blue-200 outline-none transition-all placeholder:text-slate-300" />
+                     </div>
+                     <textarea name="requirement" placeholder="Project Requirements..." required className="w-full h-28 p-5 bg-slate-50/80 border border-slate-100 rounded-2xl text-sm font-medium focus:ring-4 ring-blue-500/10 focus:border-blue-200 outline-none transition-all resize-none placeholder:text-slate-300" />
+                     <Button type="submit" className="w-full h-13 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 transition-all duration-300 border-0">
+                        Send Inquiry <ArrowRight size={16} className="ml-2" />
+                     </Button>
+                  </form>
+               </Card>
+            </motion.div>
+         </motion.div>
       </section>
 
       {/* ── FINAL CTA ── */}
-      <section className="py-40 bg-white px-8 text-center bg-gradient-to-b from-white to-slate-50/50">
-         <div className="max-w-4xl mx-auto space-y-10">
-            <h2 className="text-6xl md:text-8xl font-black text-slate-900 tracking-tighter italic uppercase leading-[0.85]">
-               READY TO <br />
-               <span className="text-blue-600">GET IT DONE?</span>
-            </h2>
-            <p className="text-xl font-medium text-slate-500 italic max-w-lg mx-auto">
+      <section className="py-28 lg:py-40 px-6 lg:px-10 text-center relative z-10">
+         <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true }}
+            variants={stagger}
+            className="max-w-3xl mx-auto space-y-8"
+         >
+            <motion.h2 variants={fadeUp}
+               className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1]"
+            >
+               Ready to{' '}
+               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Get It Done?</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={1}
+               className="text-lg text-slate-500 max-w-lg mx-auto"
+            >
                Stop scrolling. Start hiring. Get your first project delivered this week.
-            </p>
-            <Button onClick={() => router.push('/post-job')} className="h-20 px-16 bg-slate-900 hover:bg-slate-800 text-white rounded-3xl font-black text-lg uppercase tracking-widest shadow-2xl">
-               Start Hiring Now
-            </Button>
-         </div>
+            </motion.p>
+            <motion.div variants={fadeUp} custom={2}>
+               <Button onClick={() => router.push('/post-job')} 
+                  className="h-16 px-12 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white rounded-2xl font-semibold text-base shadow-2xl shadow-slate-900/25 hover:shadow-slate-900/35 transition-all duration-300 hover:scale-[1.02] border-0"
+               >
+                  Start Hiring Now <ArrowRight size={18} className="ml-2" />
+               </Button>
+            </motion.div>
+         </motion.div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="py-24 border-t border-slate-100 px-8">
-         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
+      <footer className="py-16 border-t border-slate-100 px-6 lg:px-10 relative z-10 bg-white/50">
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="flex items-center gap-3">
-               <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-[10px]">BG</div>
-               <span className="text-xl font-black tracking-tighter italic uppercase">BharatGig</span>
+               <div className="w-8 h-8 bg-gradient-to-br from-slate-900 to-slate-700 rounded-lg flex items-center justify-center text-white font-bold text-[10px]">BG</div>
+               <span className="text-lg font-extrabold tracking-tight text-slate-900">BharatGig</span>
             </div>
-            <div className="flex gap-10 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <div className="flex gap-8 text-[13px] font-medium text-slate-400">
                {['About', 'Privacy', 'Security', 'Twitter'].map(link => (
-                  <a key={link} href="#" className="hover:text-slate-900 transition-colors">{link}</a>
+                  <a key={link} href="#" className="hover:text-slate-900 transition-colors duration-200">{link}</a>
                ))}
             </div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+            <div className="text-[12px] font-medium text-slate-300">
                © 2026 BharatGig. All Rights Reserved.
             </div>
          </div>
       </footer>
+
+      {/* ── Custom shimmer animation ── */}
+      <style jsx global>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+        .h-13 {
+          height: 3.25rem;
+        }
+      `}</style>
     </div>
   );
 }
