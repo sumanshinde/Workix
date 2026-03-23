@@ -31,3 +31,7 @@ export const getUserNotifications = async (userId: string) => {
 export const markAsRead = async (notificationId: string) => {
   return await Notification.findByIdAndUpdate(notificationId, { isRead: true }, { new: true });
 };
+
+export const markAllAsRead = async (userId: string) => {
+  return await Notification.updateMany({ userId }, { isRead: true });
+};

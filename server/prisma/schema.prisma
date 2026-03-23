@@ -37,8 +37,10 @@ enum EscrowStatus {
 model User {
   id           String     @id @default(uuid())
   name         String
-  email        String     @unique
-  password     String
+  email        String?    @unique
+  phone        String?    @unique
+  password     String?
+  isVerified   Boolean    @default(false)
   pan_number   String?
   aadhaar_hash String?
   upi_id       String?
@@ -49,6 +51,30 @@ model User {
   gigs         Gig[]
   job_posts    JobPost[]
   proposals    Proposal[]
+  subscriptionStatus String   @default("free") // "free", "pro"
+  subscriptions      Subscription[]
+}
+
+model Subscription {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  planId         String
+  subscriptionId String   @unique
+  status         String
+  currentStart   DateTime?
+  currentEnd     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model OTP {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  code      String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 model Gig {

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, Github } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Github, ArrowLeft } from 'lucide-react';
 import { BRANDING } from '@/lib/config';
 import { Button, Card, Input } from '@/components/ui';
 
@@ -13,6 +13,7 @@ const SOCIAL = [
     id: 'google',
     label: 'Continue with Google',
     variant: 'outline' as const,
+    className: 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-blue-200 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200',
     icon: (
       <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -26,7 +27,7 @@ const SOCIAL = [
     id: 'github',
     label: 'Continue with GitHub',
     variant: 'outline' as const,
-    className: 'bg-gray-900 border-gray-900 text-white hover:bg-gray-800 hover:border-gray-800',
+    className: 'bg-[#0f172a] border-[#0f172a] text-white hover:bg-[#1e293b] hover:border-[#1e293b] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200',
     icon: <Github size={20} />,
   },
 ];
@@ -40,22 +41,13 @@ export default function LoginPage() {
   const [showPw, setShowPw]     = useState(false);
   const [loading, setLoading]   = useState<string | null>(null);
   const [error, setError]       = useState('');
-  const [mounted, setMounted]   = useState(false);
 
-  useEffect(() => { 
-    setMounted(true); 
-    router.prefetch('/dashboard');
-    router.prefetch('/admin/dashboard');
-    router.prefetch('/client/dashboard');
-  }, [router]);
-
+  // Automatically redirect if already authenticated
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/dashboard');
+      router.push('/dashboard');
     }
   }, [status, router]);
-
-  if (!mounted) return null;
 
   const handleSocial = async (provider: string) => {
     setLoading(provider);
@@ -63,6 +55,7 @@ export default function LoginPage() {
     try {
       await signIn(provider, { callbackUrl: '/dashboard' });
     } catch (err) {
+      console.error('Social auth error:', err);
       setError('Social authentication failed. Please try again.');
       setLoading(null);
     }
@@ -79,145 +72,164 @@ export default function LoginPage() {
         password,
         redirect: false,
       });
+
+      console.log('SignIn Response:', res);
       
       if (res?.error) {
-        setError('Invalid identity credentials. Please try again.');
+        setError(res.error || 'Invalid identity credentials. Please try again.');
         setLoading(null);
         return;
       }
 
-      window.location.href = '/dashboard';
+      if (res?.ok) {
+        router.push('/dashboard');
+        router.refresh(); 
+      }
       
     } catch (err) {
+      console.error('Credentials auth exception:', err);
       setError('An unexpected error occurred. Please try again.');
       setLoading(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center p-6 selection:bg-blue-100 selection:text-blue-600">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 selection:bg-blue-100 selection:text-blue-600 relative overflow-hidden">
       
-      {/* Abstract Background Elements (Soft) */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none opacity-[0.03] overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600 rounded-full blur-[120px]" />
+      {/* Abstract Background Elements (Soft Blobs) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-blue-500/10 rounded-full blur-[120px] transform-gpu will-change-transform" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[45%] h-[45%] bg-purple-500/10 rounded-full blur-[120px] transform-gpu will-change-transform" />
       </div>
 
       {/* Logo */}
       <div
-        className="relative z-10 flex items-center gap-3 mb-8 cursor-pointer group"
+        className="relative z-10 flex items-center gap-3 mb-10 cursor-pointer group"
         onClick={() => router.push('/')}
       >
-        <div className="w-9 h-9 bg-gradient-to-br from-[#2563eb] to-[#4f46e5] rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform duration-300">
           {BRANDING.shortName}
         </div>
-        <span className="text-xl font-bold text-gray-900 tracking-tight">{BRANDING.name}</span>
+        <span className="text-2xl font-bold text-slate-900 tracking-tight">{BRANDING.name}</span>
       </div>
 
-      {/* Card */}
-      <Card
-        padding="none"
-        shadow="none"
-        className="relative z-10 w-full max-w-[420px] overflow-hidden bg-white border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]"
-      >
-        <div className="pt-8 pb-4 text-center">
-          <h2 className="text-2xl font-extrabold mb-1.5 bg-clip-text text-transparent bg-gradient-to-r from-[#2563eb] to-[#4f46e5] tracking-tight">
-            Welcome back
-          </h2>
-          <p className="text-xs font-medium text-gray-400">Secure entry to your workspace</p>
-        </div>
-
-        <div className="px-8 pb-8 space-y-5">
-          {error && (
-            <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl flex items-center gap-3 text-rose-600 text-sm font-medium animate-in fade-in slide-in-from-top-1">
-              <AlertCircle size={18} />
-              {error}
-            </div>
-          )}
-
-          {/* Social login */}
-          <div className="grid grid-cols-1 gap-3">
-            {SOCIAL.map((provider) => (
-              <Button
-                key={provider.id}
-                variant="outline"
-                onClick={() => handleSocial(provider.id)}
-                isLoading={loading === provider.id}
-                disabled={!!loading}
-                className="w-full h-11 rounded-xl border-gray-100 hover:bg-gray-50 hover:border-gray-200 transition-all font-semibold text-gray-700"
-                leftIcon={provider.icon}
-              >
-                {provider.label}
-              </Button>
-            ))}
+      {/* Center Card */}
+      <div className="relative z-10 w-full max-w-[420px]">
+        <div className="bg-white/80 backdrop-blur-xl border border-slate-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] rounded-[24px] overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)]">
+          
+          <div className="pt-10 pb-4 text-center px-8">
+            <h2 className="text-3xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 tracking-tight">
+              Welcome back
+            </h2>
+            <p className="text-sm font-medium text-slate-500">Secure entry to your workspace</p>
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
-            <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest text-gray-400">
-              <span className="bg-white px-4">or identity access</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleCredentials} className="space-y-4">
-            <Input
-              label="Email address"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="ark@workix.com"
-              required
-              className="h-11 rounded-xl bg-gray-50/50 border-gray-100 focus:bg-white text-sm"
-              leftIcon={<Mail size={18} className="text-gray-400" />}
-            />
-
-            <div className="space-y-1">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Password</label>
-                <a href="#" className="text-[10px] text-blue-600 font-bold hover:underline">Forgot?</a>
+          <div className="px-8 pb-10 space-y-7">
+            
+            {error && (
+              <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center gap-3 text-red-600 text-sm font-medium">
+                <AlertCircle size={18} className="shrink-0" />
+                <p className="leading-snug">{error}</p>
               </div>
-              <Input
-                type={showPw ? "text" : "password"}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="h-11 rounded-xl bg-gray-50/50 border-gray-100 focus:bg-white text-sm"
-                leftIcon={<Lock size={18} className="text-gray-400" />}
-                rightIcon={
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
-                    {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                }
-              />
+            )}
+
+            {/* Social login */}
+            <div className="grid grid-cols-1 gap-3.5">
+              {SOCIAL.map((provider) => (
+                <Button
+                  key={provider.id}
+                  variant="outline"
+                  type="button"
+                  onClick={() => handleSocial(provider.id)}
+                  isLoading={loading === provider.id}
+                  disabled={!!loading && loading !== provider.id}
+                  className={`w-full h-12 rounded-xl font-semibold flex items-center justify-center gap-3 ${provider.className || ''}`}
+                  leftIcon={provider.icon}
+                >
+                  {provider.label}
+                </Button>
+              ))}
             </div>
 
-            <Button
-              type="submit"
-              isLoading={loading === 'credentials'}
-              disabled={!!loading}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-[#2563eb] to-[#4f46e5] hover:opacity-90 active:scale-[0.98] transition-all font-bold text-sm shadow-lg shadow-blue-600/20 border-none"
-            >
-              Sign In to Dashboard
-            </Button>
-          </form>
-        </div>
+            {/* Divider */}
+            <div className="relative flex items-center py-2">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="mx-4 text-xs uppercase font-bold tracking-wider text-slate-400 px-2 bg-transparent">
+                OR
+              </span>
+              <div className="flex-grow border-t border-slate-200"></div>
+            </div>
 
-        <div className="py-5 bg-gray-50/50 border-t border-gray-100 text-center">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Don't have an account?{' '}
-            <a href="/register" className="text-blue-600 hover:text-[#4f46e5] transition-colors">
-              Create one
-            </a>
-          </p>
+            {/* Email Form */}
+            <form onSubmit={handleCredentials} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 px-1">Email address</label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    required
+                    disabled={!!loading}
+                    className="h-12 rounded-xl bg-[#f9fafb] border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200 text-[15px]"
+                    leftIcon={<Mail size={20} className="text-slate-400" />}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-sm font-medium text-slate-700">Password</label>
+                    <a href="#" className="text-sm text-blue-600 font-semibold hover:text-blue-700 transition-colors">Forgot?</a>
+                  </div>
+                  <Input
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled={!!loading}
+                    className="h-12 rounded-xl bg-[#f9fafb] border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200 text-[15px]"
+                    leftIcon={<Lock size={20} className="text-slate-400" />}
+                    rightIcon={
+                      <button type="button" onClick={() => setShowPw(!showPw)} className="text-slate-400 hover:text-slate-600 focus:outline-none transition-colors pointer-events-auto flex items-center h-full px-2">
+                        {showPw ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  isLoading={loading === 'credentials'}
+                  disabled={!!loading}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-[15px] transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/25 border-none disabled:opacity-70 disabled:hover:scale-100 disabled:active:scale-100"
+                >
+                  Sign In to Dashboard
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          <div className="py-6 bg-slate-50/50 border-t border-slate-100 text-center">
+            <p className="text-[13px] font-medium text-slate-500">
+              Don't have an account?{' '}
+              <a href="/register" className="text-blue-600 font-semibold hover:text-indigo-600 transition-colors">
+                Create one
+              </a>
+            </p>
+          </div>
         </div>
-      </Card>
+      </div>
 
       <a
         href="/"
-        className="relative z-10 mt-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-colors"
+        className="relative z-10 mt-8 text-[13px] font-medium text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-1.5"
       >
-        ← Back to home
+        <ArrowLeft size={14} />
+        Back to home
       </a>
     </div>
   );

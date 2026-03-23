@@ -8,6 +8,9 @@ import helmet from 'helmet';
 import hpp from 'hpp';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
+import xss from 'xss-clean';
+import mongoSanitize from 'express-mongo-sanitize';
 import { apiLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -26,14 +29,33 @@ import notificationRoutes from './routes/notifications';
 import referralRoutes from './routes/referrals';
 import contractRoutes from './routes/contracts';
 import adminRoutes from './routes/admin';
+import subscriptionRoutes from './routes/subscriptions';
+import orderRoutes from './routes/orders';
+import milestoneRoutes from './routes/milestones';
+import profileRoutes from './routes/profile';
+import taxRoutes from './routes/tax';
+import dashboardRoutes from './routes/dashboard';
+import leadRoutes from './routes/leads';
+import shortlistRoutes from './routes/shortlists';
+import onboardingRoutes from './routes/onboarding';
+import analyticsRoutes from './routes/analytics';
+import experimentRoutes from './routes/experiments';
+
+import { handleStripeWebhook, handleRazorpayWebhook } from './controllers/webhooks';
 
 dotenv.config();
 
 const app = express();
+
+// Webhook handling must be BEFORE express.json() for rawBody verification
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
+app.post('/api/webhooks/razorpay', handleRazorpayWebhook);
 const server = http.createServer(app);
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+
 const io = new Server(server, {
   cors: {
-    origin: [process.env.CLIENT_URL || 'http://localhost:3000', 'http://localhost:3001'],
+    origin: [CLIENT_URL, 'http://localhost:3001'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   },
@@ -42,19 +64,35 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/fiverr_clone';
 
-// Middelewares
+// Middlewares
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(helmet({
+  contentSecurityPolicy: false, 
+}));
 app.use(cors({
-  origin: [process.env.CLIENT_URL || 'http://localhost:3000', 'http://localhost:3001'],
+  origin: [CLIENT_URL, 'http://localhost:3001'],
   credentials: true,
 }));
 app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
-app.use(helmet()); 
+app.use(mongoSanitize());
+app.use(xss());
 app.use(hpp());
 app.use(compression());
 
 // Global API Rate Limiting
 app.use('/api', apiLimiter);
+
+// Health Check
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'Healthy', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    env: process.env.NODE_ENV 
+  });
+});
 
 // Route Registration
 app.use('/api/auth', authRoutes);
@@ -71,68 +109,31 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/milestones', milestoneRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/tax', taxRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/leads', leadRoutes);
+app.use('/api/shortlists', shortlistRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/admin/analytics', analyticsRoutes);
+app.use('/api/experiments', experimentRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'BharatGig API Cluster Operational', status: 'Healthy' });
 });
 
-// Final Error Handling Middleware
+// Error handling
 app.use(errorHandler);
 
-import Message from './models/Message';
-import ActivityLog from './models/ActivityLog';
-
-// Socket.io Logic
-io.on('connection', (socket) => {
-  socket.on('join_chat', (userId) => socket.join(userId));
-  socket.on('send_msg', async (data) => {
-    try {
-      const msg = await Message.create({
-        senderId: data.senderId,
-        receiverId: data.receiverId,
-        text: data.text
-      });
-      const populatedMsg = await msg.populate([{path: 'senderId', select:'name role'}, {path: 'receiverId'}]);
-      io.to(data.receiverId).emit('receive_msg', populatedMsg);
-      io.emit('receive_msg', populatedMsg); // Broadcast to admin monitor
-      
-      const act = await ActivityLog.create({
-        userId: data.senderId,
-        action: 'message_sent',
-        details: { text: data.text, receiverId: data.receiverId }
-      });
-      const popAct = await act.populate('userId');
-      io.emit('new_activity', popAct);
-
-      // Fraud Check
-      const lower = data.text.toLowerCase();
-      if (lower.includes('whatsapp') || lower.includes('telegram') || lower.includes('pay outside') || lower.includes('skype') || lower.includes('direct payment')) {
-        const User = require('./models/User').default;
-        await User.findByIdAndUpdate(data.senderId, { $inc: { riskScore: 25 }, isFlagged: true });
-        
-        const fraudAct = await ActivityLog.create({
-          userId: data.senderId,
-          action: 'fraud_alert',
-          details: { reason: 'Off-platform communication detected', text: data.text }
-        });
-        const popFraud = await fraudAct.populate('userId');
-        io.emit('new_activity', popFraud);
-        io.emit('sys_alert', popFraud);
-      }
-    } catch(err) {
-      console.error(err);
-    }
-  });
-});
-
-// Primary Database & Server Launch
 mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log('✅ MongoDB Connected Successfuly');
-    server.listen(PORT, () => {
-      console.log(`🚀 Server Cluster Operational on Port ${PORT}`);
-    });
-  })
-  .catch(err => console.error('❌ Database Sync Failure:', err));
+  .then(() => console.log('Connected to MongoDB Production Instance'))
+  .catch((err) => console.error('MongoDB Connection Crash:', err));
+
+server.listen(PORT, () => {
+  console.log(`[Prod-Ready] Server cluster running on port ${PORT}`);
+});
 
 export { io };

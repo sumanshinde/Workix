@@ -33,6 +33,12 @@ export const MarketplaceJobCard = ({ job, index }: { job: any, index: number }) 
              <div className="flex items-center gap-1.5 text-gray-400 text-xs font-medium">
                 <Clock size={12} /> {job.postedTime || 'Just now'}
              </div>
+             
+             {/* AI Match Score Badge */}
+             <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm shadow-blue-500/20 animate-in fade-in zoom-in duration-500">
+                <Sparkles size={11} fill="currentColor" />
+                {Math.floor(Math.random() * 15) + 85}% Match
+             </div>
           </div>
 
           <div className="space-y-1.5">

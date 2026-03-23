@@ -196,8 +196,8 @@ export const exportPDF = async (req: Request, res: Response) => {
 
 export const getAnalyticsSummary = async (req: Request, res: Response) => {
   try {
-    const { getConversionStats } = await import('../services/analyticsService');
-    const stats = await getConversionStats();
+    const { getGrowthMetrics } = await import('../services/AnalyticsService');
+    const stats = await getGrowthMetrics();
     res.json(stats);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch analytics', error: err });
@@ -207,7 +207,7 @@ export const getAnalyticsSummary = async (req: Request, res: Response) => {
 export const trackAnalyticsEvent = async (req: any, res: Response) => {
   try {
     const { event, category, metadata } = req.body;
-    const { trackEvent } = await import('../services/analyticsService');
+    const { trackEvent } = await import('../services/AnalyticsService');
     await trackEvent(event, category, req.user.id, metadata);
     res.status(200).json({ success: true });
   } catch (err) {

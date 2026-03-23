@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { createDispute, getDisputes, resolveDispute, rejectDispute } from '../controllers/disputes';
-import { authenticate, authorize } from '../middleware/auth';
+import { raiseDispute, resolveDispute, getDispute, getDisputes } from '../controllers/disputes';
+import { protect, authorize } from '../middleware/auth';
 
 const router = Router();
 
-router.post('/create', authenticate, createDispute);
-router.get('/', authenticate, authorize(['admin']), getDisputes);
-router.put('/:id/resolve', authenticate, authorize(['admin']), resolveDispute);
-router.put('/:id/reject', authenticate, authorize(['admin']), rejectDispute);
+router.post('/create', protect, raiseDispute);
+router.get('/', protect, getDisputes);
+router.get('/:id', protect, getDispute);
+router.put('/:id/resolve', protect, authorize(['admin']), resolveDispute);
 
 export default router;

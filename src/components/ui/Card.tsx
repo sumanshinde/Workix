@@ -19,27 +19,27 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     hoverable = true, 
     border = true, 
     shadow = 'sm', 
-    glass = false, 
+    glass = true, 
     children, 
     motionProps,
     ...props 
   }, ref) => {
     
-    const baseStyles = "relative bg-white border border-[#e5e7eb] rounded-xl transition-all duration-200";
+    const baseStyles = "relative bg-white/70 backdrop-blur-xl border border-slate-100 rounded-2xl transition-all duration-300 z-10";
     
     const paddingStyles: Record<string, string> = {
       none: "p-0",
-      sm: "p-4",
-      md: "p-5",
-      lg: "p-8",
-      xl: "p-10",
+      sm: "p-5",
+      md: "p-7",
+      lg: "p-9",
+      xl: "p-12",
     };
 
     const shadowStyles: Record<string, string> = {
       none: "",
-      sm: "shadow-sm hover:shadow-md hover:border-gray-300",
-      md: "shadow-md hover:shadow-lg",
-      lg: "shadow-lg",
+      sm: "shadow-sm hover:shadow-md hover:-translate-y-0.5",
+      md: "shadow-lg shadow-black/5 hover:shadow-xl hover:-translate-y-1",
+      lg: "shadow-xl shadow-black/5 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/5",
     };
 
     return (
@@ -48,7 +48,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         className={`
           ${baseStyles} 
           ${paddingStyles[padding] || paddingStyles.md} 
-          ${shadowStyles[shadow] || shadowStyles.sm} 
+          ${hoverable ? shadowStyles[shadow] || shadowStyles.md : ''} 
           ${className}
         `}
         {...props}

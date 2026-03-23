@@ -56,6 +56,7 @@ export default function PostJobPage() {
   const [step, setStep] = useState(1);
   const [skillInput, setSkillInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const [form, setForm] = useState<JobForm>({
@@ -114,66 +115,86 @@ export default function PostJobPage() {
     }
   };
 
+  const handleAISuggestion = async () => {
+    if (!form.title || form.title.length < 5) return;
+    setAiLoading(true);
+    try {
+      const data = await jobsAPI.generateAI(form.title, form.category);
+      if (data.description) set('description', data.description);
+      if (data.skills && data.skills.length > 0) {
+        set('skills', Array.from(new Set([...form.skills, ...data.skills])).slice(0, 10));
+      }
+      // Move to step 2 automatically if we got a description
+      if (data.description && step === 1) setStep(2);
+    } catch (err) {
+      console.error('AI Error:', err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
    // ── Success screen ────────────────────────────────────────────────────────
    if (submitted) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-6">
-        <div className="saas-card p-12 text-center max-w-md">
-          <div className="w-16 bg-emerald-50 rounded-lg flex items-center justify-center mx-auto mb-6 border border-emerald-100">
-            <Check size={28} className="text-emerald-600" />
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-6">
+        <div className="saas-card p-12 text-center max-w-lg">
+          <div className="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-8 border border-emerald-100 shadow-sm shadow-emerald-500/10">
+            <Check size={36} className="text-emerald-500" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Job Posted Successfully</h2>
-          <p className="text-sm text-gray-500 leading-relaxed">Your project is now live. Freelancers can now submit proposals for your review.</p>
-          <div className="mt-8 h-1 w-full bg-gray-50 rounded-full overflow-hidden">
-             <div className="h-full bg-emerald-500 w-full transition-all duration-1000" />
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Job Posted Successfully</h2>
+          <p className="text-[15px] text-slate-500 leading-relaxed font-medium">Your project is now live on the marketplace. Verified professionals can now submit execution proposals.</p>
+          <div className="mt-10 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+             <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 w-full transition-all duration-1000" />
           </div>
-          <p className="text-xs font-medium text-gray-400 mt-4">Redirecting to Dashboard...</p>
+          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mt-6">Redirecting to Dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white selection:bg-blue-100 selection:text-blue-600">
+    <div className="min-h-screen bg-[#fafafa] selection:bg-blue-100 selection:text-blue-600 font-sans pb-24">
 
       {/* ── NAV ── */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 md: flex items-center justify-between">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+      <nav className="bg-white/70 backdrop-blur-xl border-b border-slate-100 sticky top-0 z-[100] h-20 flex items-center justify-between px-6 shadow-sm">
+        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => router.push('/')}>
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-extrabold text-[15px] shadow-sm shadow-blue-500/20 group-hover:scale-105 transition-transform">
             {BRANDING.shortName}
           </div>
-          <span className="font-semibold text-xl text-gray-900 tracking-tight">{BRANDING.name}</span>
+          <span className="font-extrabold text-xl text-slate-900 tracking-tight">{BRANDING.name}</span>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="secondary" onClick={() => router.back()} className="h-9 px-4 text-gray-500">
+          <button onClick={() => router.back()} className="text-[14px] font-bold text-slate-500 hover:text-slate-900 transition-colors px-4 py-2">
             Discard
-          </Button>
+          </button>
         </div>
       </nav>
 
-      <div className="max-w-3xl mx-auto py-10">
+      <div className="max-w-3xl mx-auto pt-16 px-4">
 
         {/* ── PAGE HEADER ── */}
-        <div className="mb-10 text-center space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900">Post a Job</h1>
-          <p className="text-sm text-gray-500">Tell us about your project — it only takes a few minutes.</p>
+        <div className="mb-14 text-center space-y-4">
+          <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Post a Job</h1>
+          <p className="text-[16px] font-medium text-slate-500">Provide project details to attract top-tier professionals.</p>
         </div>
 
         {/* ── STEP INDICATOR ── */}
-        <div className="flex items-center justify-center gap-3 mb-12">
+        <div className="flex items-center justify-center gap-4 mb-16 px-4">
           {STEPS.map((s, i) => (
             <React.Fragment key={s.id}>
               <div
-                className={`w-10 h-10-lg shadow-lg shadow-blue-100'
+                className={`w-12 h-12 flex items-center justify-center rounded-xl font-extrabold text-[15px] transition-all duration-500 shadow-sm ${
+                  step === s.id
+                    ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-blue-500/20 shadow-lg scale-110'
                     : step > s.id
-                    ? 'bg-blue-50 border-blue-100 text-blue-600'
-                    : 'bg-white border-gray-100 text-gray-400'
+                    ? 'bg-blue-50 border border-blue-100 text-blue-600'
+                    : 'bg-white border border-slate-200 text-slate-400'
                 }`}
               >
-                {step > s.id ? <Check size={16} /> : s.id}
+                {step > s.id ? <Check size={18} strokeWidth={3} /> : s.id}
               </div>
               {i < STEPS.length - 1 && (
-                <div className={`w-8 h-px ${step > s.id ? 'bg-blue-200' : 'bg-gray-100'}`} />
+                <div className={`flex-1 h-1 rounded-full transition-all duration-500 ${step > s.id ? 'bg-blue-500' : 'bg-slate-200'}`} />
               )}
             </React.Fragment>
           ))}
@@ -184,38 +205,46 @@ export default function PostJobPage() {
 
             {/* ─── STEP 1: Job Info ─── */}
             {step === 1 && (
-              <div className="saas-card space-y-8">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="saas-card space-y-10 group">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">Project Details</h3>
-                  <p className="text-sm text-gray-500">Provide a clear title and select a category.</p>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mb-2">Project Details</h3>
+                  <p className="text-[14px] font-medium text-slate-500">Provide a clear title and select the primary service category.</p>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">Project Title</label>
+                <div className="space-y-3">
+                  <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest">Project Title</label>
                   <input
                     type="text"
                     value={form.title}
                     onChange={e => set('title', e.target.value)}
-                    className="form-input"
-                    placeholder="e.g. Build a React dashboard for my SaaS app"
+                    className="form-input focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-[16px]"
+                    placeholder="e.g. Architect a scalable React dashboard for our SaaS"
                     maxLength={100}
                   />
                   <div className="flex justify-between items-center px-1">
-                    <span className="text-[10px] text-gray-400">Be descriptive and concise</span>
-                    <span className="text-[10px] text-gray-400">{form.title.length}/100</span>
+                    <button 
+                      type="button"
+                      onClick={handleAISuggestion}
+                      disabled={aiLoading || form.title.length < 5}
+                      className="flex items-center gap-1.5 text-[11px] font-extrabold text-blue-600 uppercase tracking-widest hover:text-blue-700 disabled:opacity-50 transition-opacity"
+                    >
+                      <Zap size={12} fill="currentColor" />
+                      {aiLoading ? 'Synthesizing...' : 'Magic: Auto-fill with AI'}
+                    </button>
+                    <span className="text-[11px] font-bold text-slate-400">{form.title.length}/100</span>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <label className="text-sm font-semibold text-gray-700">Category</label>
+                <div className="space-y-4">
+                  <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest">Category</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {CATEGORIES.map(cat => (
                       <button
                         key={cat}
                         type="button"
                         onClick={() => set('category', cat)}
-                        className={`text-left px-3 py-2.5 rounded-lg border text-xs font-medium transition-all ${
+                        className={`text-left px-5 py-4 rounded-xl border text-[13px] font-bold transition-all ${
                           form.category === cat
-                            ? 'border-blue-600 bg-blue-50 text-blue-600 ring-1 ring-blue-600'
-                            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                            ? 'border-blue-600 bg-blue-50/50 text-blue-700 shadow-sm shadow-blue-500/5'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
                         }`}
                       >
                         {cat}
@@ -223,194 +252,187 @@ export default function PostJobPage() {
                     ))}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* ─── STEP 2: Scope & Description ─── */}
             {step === 2 && (
-              <div className="saas-card space-y-8">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="saas-card space-y-10">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">Description</h3>
-                  <p className="text-sm text-gray-500">Help freelancers understand exactly what you need.</p>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mb-2">Scope & Context</h3>
+                  <p className="text-[14px] font-medium text-slate-500">Detail the execution requirements and complexity.</p>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">Detailed Description</label>
+                <div className="space-y-3">
+                  <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest">Detailed Context</label>
                   <textarea
                     rows={8}
                     value={form.description}
                     onChange={e => set('description', e.target.value)}
-                    className="form-input resize-none py-3"
-                    placeholder="Describe the project clearly:&#10;• Goals and requirements&#10;• Key deliverables&#10;• Technical preferences"
+                    className="form-input resize-none py-4 text-[15px] font-medium leading-relaxed"
+                    placeholder="Elaborate on objectives...&#10;• Strategic goals&#10;• Technical stack required&#10;• Deliverable expectations"
                   />
-                  <p className="text-[10px] text-gray-400 px-1">{form.description.length} characters (min. 20)</p>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1">{form.description.length} chars (min. 20)</p>
                 </div>
-                <div className="space-y-3">
-                  <label className="text-sm font-semibold text-gray-700">Project Size</label>
-                  <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-4">
+                  <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest">Execution Size</label>
+                  <div className="grid grid-cols-3 gap-4">
                     {[
-                      { val: 'small',  label: 'Small',  sub: '< 1 week' },
-                      { val: 'medium', label: 'Medium', sub: '1–4 weeks' },
-                      { val: 'large',  label: 'Large',  sub: '1+ months' },
+                      { val: 'small',  label: 'Micro',  sub: '< 1 week' },
+                      { val: 'medium', label: 'Standard', sub: '1–4 weeks' },
+                      { val: 'large',  label: 'Complex',  sub: '1+ months (Scale)' },
                     ].map(s => (
                       <button
                         key={s.val}
                         type="button"
                         onClick={() => set('scope', s.val)}
-                        className={`p-4 rounded-xl border transition-all ${
+                        className={`p-5 rounded-2xl border transition-all text-left ${
                           form.scope === s.val
-                            ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
-                            : 'border-gray-200 hover:bg-gray-50'
+                            ? 'border-blue-500 bg-blue-50/50 shadow-sm shadow-blue-500/5'
+                            : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                         }`}
                       >
-                        <p className={`text-sm font-bold ${form.scope === s.val ? 'text-blue-600' : 'text-gray-900'}`}>{s.label}</p>
-                        <p className="text-[11px] text-gray-500 mt-0.5">{s.sub}</p>
+                        <p className={`text-[15px] font-extrabold ${form.scope === s.val ? 'text-blue-700' : 'text-slate-900'}`}>{s.label}</p>
+                        <p className="text-[12px] font-medium text-slate-500 mt-1 uppercase tracking-widest">{s.sub}</p>
                       </button>
                     ))}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* ─── STEP 3: Budget & Timeline ─── */}
             {step === 3 && (
-              <div className="saas-card space-y-8">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="saas-card space-y-10">
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-1">Budget & Timeline</h3>
-                  <p className="text-sm text-gray-500">Set your budget range and project deadline.</p>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mb-2">Budget Allocation</h3>
+                  <p className="text-[14px] font-medium text-slate-500">Define the financial constraints for this opportunity.</p>
                 </div>
 
-                {/* Budget type */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payment Type</label>
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-4">
+                  <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest">Remuneration Model</label>
+                  <div className="grid grid-cols-2 gap-4">
                     {[
-                      { val: 'fixed',  label: 'Fixed Price', icon: <IndianRupee size={16} />, sub: 'One-time payment for the full project' },
-                      { val: 'hourly', label: 'Hourly Rate',  icon: <Clock size={16} />,      sub: 'Pay per hour tracked' },
+                      { val: 'fixed',  label: 'Fixed Price', icon: <IndianRupee size={20} />, sub: 'Defined milestone payment' },
+                      { val: 'hourly', label: 'Hourly Rate',  icon: <Clock size={20} />,      sub: 'Time-tracked execution' },
                     ].map(t => (
                       <button
                         key={t.val}
                         type="button"
                         onClick={() => set('budgetType', t.val)}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        className={`p-5 rounded-2xl border-2 text-left transition-all ${
                           form.budgetType === t.val
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-blue-500 bg-blue-50/30'
+                            : 'border-slate-100 hover:border-slate-300 bg-white'
                         }`}
                       >
-                        <div className={`mb-2 ${form.budgetType === t.val ? 'text-blue-600' : 'text-gray-400'}`}>{t.icon}</div>
-                        <p className={`text-sm font-semibold ${form.budgetType === t.val ? 'text-blue-700' : 'text-gray-800'}`}>{t.label}</p>
-                        <p className="text-xs text-gray-400 mt-0.5 leading-snug">{t.sub}</p>
+                        <div className={`mb-3 ${form.budgetType === t.val ? 'text-blue-600' : 'text-slate-400'}`}>{t.icon}</div>
+                        <p className={`text-[15px] font-extrabold tracking-tight ${form.budgetType === t.val ? 'text-blue-700' : 'text-slate-900'}`}>{t.label}</p>
+                        <p className="text-[12px] font-medium tracking-wide text-slate-500 mt-1">{t.sub}</p>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Budget range */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                      Min Budget (₹) *
-                    </label>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest">Min Budget (₹)</label>
                     <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">₹</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[15px] font-bold">₹</span>
                       <input
                         type="number"
                         value={form.budgetMin}
                         onChange={e => set('budgetMin', e.target.value)}
-                        className="form-input"
-                        style={{ paddingLeft: '2rem' }}
-                        placeholder="5,000"
+                        className="form-input text-lg font-bold"
+                        style={{ paddingLeft: '2.5rem' }}
+                        placeholder="5000"
                       />
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Max Budget (₹)</label>
+                  <div className="space-y-3">
+                    <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest">Max Budget (₹)</label>
                     <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">₹</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[15px] font-bold">₹</span>
                       <input
                         type="number"
                         value={form.budgetMax}
                         onChange={e => set('budgetMax', e.target.value)}
-                        className="form-input"
-                        style={{ paddingLeft: '2rem' }}
-                        placeholder="50,000"
+                        className="form-input text-lg font-bold"
+                        style={{ paddingLeft: '2.5rem' }}
+                        placeholder="50000"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Deadline */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Project Deadline *</label>
+                <div className="space-y-3">
+                  <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest">Target Deadline</label>
                   <div className="relative">
-                    <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                     <input
                       type="date"
                       value={form.deadline}
                       onChange={e => set('deadline', e.target.value)}
-                      className="form-input"
-                      style={{ paddingLeft: '2.5rem' }}
+                      className="form-input font-bold text-[15px] text-slate-700"
+                      style={{ paddingLeft: '3rem' }}
                       min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* ─── STEP 4: Skills & Experience ─── */}
             {step === 4 && (
-              <div className="saas-card space-y-8">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="saas-card space-y-10">
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-1">Skills & Experience</h3>
-                  <p className="text-sm text-gray-500">What skills should the ideal candidate have?</p>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mb-2">Capabilities</h3>
+                  <p className="text-[14px] font-medium text-slate-500">Define the exact technical and experiential requirements.</p>
                 </div>
 
-                {/* Skill tags */}
-                <div className="space-y-3">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Required Skills * <span className="normal-case text-gray-400 font-normal">({form.skills.length}/10)</span></label>
+                <div className="space-y-4">
+                  <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest flex justify-between">
+                    <span>Required Competencies</span>
+                    <span className="text-slate-400">({form.skills.length}/10)</span>
+                  </label>
                   
-                  {/* Selected skills */}
                   {form.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-2.5">
                       {form.skills.map(skill => (
-                        <span key={skill} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200">
+                        <span key={skill} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[13px] font-extrabold border border-blue-100/50 shadow-sm">
                           {skill}
-                          <button onClick={() => removeSkill(skill)} className="text-blue-400 hover:text-blue-600">
-                            <X size={12} />
+                          <button onClick={() => removeSkill(skill)} className="text-blue-400 hover:text-rose-500 transition-colors">
+                            <X size={14} />
                           </button>
                         </span>
                       ))}
                     </div>
                   )}
 
-                  {/* Input */}
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 mt-4">
                     <input
                       type="text"
                       value={skillInput}
                       onChange={e => setSkillInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill(skillInput); } }}
-                      className="form-input flex-1"
-                      style={{ padding: '10px 14px' }}
-                      placeholder="Type a skill and press Enter..."
+                      className="form-input flex-1 font-medium text-[15px]"
+                      placeholder="Type specialized skill (Press Enter)"
                     />
                     <button
                       type="button"
                       onClick={() => addSkill(skillInput)}
-                      className="btn-primary px-4"
+                      className="btn-primary px-6 shrink-0"
                     >Add</button>
                   </div>
 
-                  {/* Popular skill suggestions */}
-                  <div>
-                    <p className="text-xs text-gray-400 mb-2">Popular skills:</p>
-                    <div className="flex flex-wrap gap-3">
+                  <div className="pt-4 border-t border-slate-100">
+                    <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Suggested Vectors:</p>
+                    <div className="flex flex-wrap gap-2">
                       {POPULAR_SKILLS.filter(s => !form.skills.includes(s)).slice(0, 10).map(skill => (
                         <button
                           key={skill}
                           type="button"
                           onClick={() => addSkill(skill)}
-                          className="px-2.5 py-1 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          className="px-3 py-1.5 text-[12px] font-extrabold text-slate-500 bg-white border border-slate-200 rounded-lg hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors shadow-sm"
                         >
                           + {skill}
                         </button>
@@ -419,138 +441,128 @@ export default function PostJobPage() {
                   </div>
                 </div>
 
-                {/* Experience level */}
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Experience Level</label>
-                  <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-4">
+                  <label className="text-[12px] font-extrabold text-slate-600 uppercase tracking-widest">Maturity Level</label>
+                  <div className="grid grid-cols-3 gap-4">
                     {[
-                      { val: 'entry',        label: 'Entry',        sub: '< 1 yr exp' },
-                      { val: 'intermediate', label: 'Intermediate', sub: '1–3 yrs exp' },
-                      { val: 'expert',       label: 'Expert',       sub: '3+ yrs exp' },
+                      { val: 'entry',        label: 'Foundation',    sub: '< 2 yrs' },
+                      { val: 'intermediate', label: 'Advanced',      sub: '2–5 yrs' },
+                      { val: 'expert',       label: 'Authority',     sub: '5+ yrs' },
                     ].map(e => (
                       <button
                         key={e.val}
                         type="button"
                         onClick={() => set('experienceLevel', e.val)}
-                        className={`p-3 rounded-xl border-2 text-center transition-all ${
+                        className={`p-4 rounded-2xl border-2 text-center transition-all ${
                           form.experienceLevel === e.val
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-blue-500 bg-blue-50/30'
+                            : 'border-slate-100 hover:border-slate-300 bg-white'
                         }`}
                       >
-                        <p className={`text-sm font-semibold ${form.experienceLevel === e.val ? 'text-blue-700' : 'text-gray-800'}`}>{e.label}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{e.sub}</p>
+                        <p className={`text-[14px] font-extrabold ${form.experienceLevel === e.val ? 'text-blue-700' : 'text-slate-900'}`}>{e.label}</p>
+                        <p className="text-[11px] uppercase tracking-widest font-bold text-slate-400 mt-1.5">{e.sub}</p>
                       </button>
                     ))}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* ─── STEP 5: Review & Publish ─── */}
             {step === 5 && (
-              <div className="space-y-6">
-                <div className="saas-card space-y-6">
-                  <h3 className="text-sm font-bold text-gray-900">Review your job post</h3>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                <div className="saas-card space-y-8">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Final Authorization</h3>
 
-                  <div className="space-y-4 divide-y divide-gray-100">
+                  <div className="space-y-6 divide-y divide-slate-100">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Job Title</p>
-                        <p className="text-sm font-semibold text-gray-900">{form.title}</p>
+                        <p className="text-[11px] text-slate-400 font-extrabold uppercase tracking-widest mb-1">Target Mission</p>
+                        <p className="text-[16px] font-bold text-slate-900 leading-snug">{form.title}</p>
                       </div>
-                      <button onClick={() => setStep(1)} className="text-xs text-blue-600 hover:underline font-medium shrink-0 ml-4">Edit</button>
+                      <button onClick={() => setStep(1)} className="text-[12px] text-blue-600 hover:text-blue-800 font-extrabold uppercase tracking-widest shrink-0 ml-4">Edit</button>
                     </div>
-                    <div className="pt-4 flex justify-between items-start">
-                      <div>
-                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Category</p>
-                        <p className="text-sm font-semibold text-gray-900">{form.category}</p>
-                      </div>
-                    </div>
-                    <div className="pt-4 flex justify-between items-start">
+                    
+                    <div className="pt-6 flex justify-between items-start">
                       <div className="flex-1 mr-4">
-                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Description</p>
-                        <p className="text-sm text-gray-700 leading-relaxed line-clamp-3">{form.description}</p>
+                        <p className="text-[11px] text-slate-400 font-extrabold uppercase tracking-widest mb-2">Execution Brief</p>
+                        <p className="text-[14px] font-medium text-slate-600 leading-relaxed whitespace-pre-wrap">{form.description}</p>
                       </div>
-                      <button onClick={() => setStep(2)} className="text-xs text-blue-600 hover:underline font-medium shrink-0">Edit</button>
+                      <button onClick={() => setStep(2)} className="text-[12px] text-blue-600 hover:text-blue-800 font-extrabold uppercase tracking-widest shrink-0">Edit</button>
                     </div>
-                    <div className="pt-4 flex justify-between items-start">
-                      <div>
-                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Budget</p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          ₹{Number(form.budgetMin).toLocaleString()}
-                          {form.budgetMax && ` – ₹${Number(form.budgetMax).toLocaleString()}`}
-                          <span className="text-gray-400 font-normal ml-1">({form.budgetType})</span>
-                        </p>
-                      </div>
-                      <button onClick={() => setStep(3)} className="text-xs text-blue-600 hover:underline font-medium shrink-0 ml-4">Edit</button>
+
+                    <div className="pt-6 grid grid-cols-2 gap-8">
+                       <div>
+                          <p className="text-[11px] text-slate-400 font-extrabold uppercase tracking-widest mb-1">Financial Auth</p>
+                          <p className="text-[16px] font-black text-slate-900 tracking-tight">
+                            ₹{Number(form.budgetMin).toLocaleString()} 
+                            {form.budgetMax && ` – ${Number(form.budgetMax).toLocaleString()}`}
+                          </p>
+                       </div>
+                       <div>
+                          <p className="text-[11px] text-slate-400 font-extrabold uppercase tracking-widest mb-1">Time Horizon</p>
+                          <p className="text-[15px] font-bold text-slate-900">{form.deadline || 'Flexible'}</p>
+                       </div>
                     </div>
-                    <div className="pt-4 flex justify-between items-start">
+
+                    <div className="pt-6 flex justify-between items-start">
                       <div>
-                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Deadline</p>
-                        <p className="text-sm font-semibold text-gray-900">{form.deadline || '—'}</p>
-                      </div>
-                    </div>
-                    <div className="pt-4 flex justify-between items-start">
-                      <div>
-                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">Skills</p>
-                        <div className="flex flex-wrap gap-1.5">
+                        <p className="text-[11px] text-slate-400 font-extrabold uppercase tracking-widest mb-3">Required Capabilities</p>
+                        <div className="flex flex-wrap gap-2">
                           {form.skills.map(s => (
-                            <span key={s} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-100">{s}</span>
+                            <span key={s} className="px-3 py-1 bg-slate-100 text-slate-700 text-[12px] font-extrabold uppercase tracking-wider rounded-md">{s}</span>
                           ))}
                         </div>
                       </div>
-                      <button onClick={() => setStep(4)} className="text-xs text-blue-600 hover:underline font-medium shrink-0 ml-4">Edit</button>
-                    </div>
-                    <div className="pt-4">
-                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Experience Level</p>
-                      <p className="text-sm font-semibold text-gray-900 capitalize">{form.experienceLevel}</p>
+                      <button onClick={() => setStep(4)} className="text-[12px] text-blue-600 hover:text-blue-800 font-extrabold uppercase tracking-widest shrink-0 ml-4">Edit</button>
                     </div>
                   </div>
                 </div>
 
-                {/* Escrow note */}
-                <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                  <ShieldCheck size={18} className="text-blue-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-700 leading-relaxed">
-                    <strong>Escrow Protected:</strong> Once a freelancer is hired, your payment is held securely and released only when you approve the work. Powered by Razorpay.
+                <div className="flex items-start gap-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100/50 shadow-inner">
+                  <ShieldCheck size={24} className="text-blue-600 shrink-0 mt-0.5" />
+                  <p className="text-[13px] text-blue-900 font-medium leading-relaxed">
+                    <strong className="font-extrabold block mb-0.5 text-blue-950">Zero-Trust Escrow Secured</strong>
+                    By proceeding, funds will only be released upon explicit cryptographic approval of deliverables. No arbitrary clearances.
                   </p>
                 </div>
-              </div>
+              </motion.div>
             )}
 
         </div>
 
         {/* ── NAV BUTTONS ── */}
-        <div className="flex items-center justify-between mt-8">
+        <div className="flex items-center justify-between mt-12 pt-6 border-t border-slate-200">
           <Button
             variant="secondary"
             onClick={() => step > 1 ? setStep(s => (s - 1) as any) : router.back()}
+            className="px-6 h-12"
           >
-            {step > 1 ? 'Go Back' : 'Cancel'}
+            {step > 1 ? '← Back' : 'Cancel'}
           </Button>
 
           {step < 5 ? (
             <Button
               onClick={() => setStep(s => (s + 1) as any)}
               disabled={!canNext()}
+              className="px-8 shadow-blue-500/20"
             >
-              Continue to Step {step + 1}
+              Continue Module →
             </Button>
           ) : (
             <Button
               onClick={handleSubmit}
               isLoading={loading}
-              className=""
+              className="px-10 bg-slate-900 hover:bg-slate-800 shadow-slate-900/20"
             >
-              Publish Project
+              Authorize & Deploy
             </Button>
           )}
         </div>
 
         {/* Step hint */}
-        <p className="text-center text-xs text-gray-400 mt-4">
-          Step {step} of {STEPS.length} — {STEPS[step - 1].label}
+        <p className="flex justify-center text-[11px] font-extrabold text-slate-400 uppercase tracking-[0.2em] mt-8">
+          Step {step} of {STEPS.length}
         </p>
 
       </div>

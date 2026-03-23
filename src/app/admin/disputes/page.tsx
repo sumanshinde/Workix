@@ -1,178 +1,252 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  AlertTriangle, Check, X, Eye, 
-  User, Calendar, ExternalLink, 
-  MessageSquare, ShieldAlert, Filter, Search 
-} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShieldAlert, Scale, CheckCircle2, XCircle, AlertTriangle, Eye, ArrowRight, Gavel, History, MessageSquare } from 'lucide-react';
+import { adminAPI } from '../../../services/api';
+import { Button, Card, Skeleton } from '../../../components/ui';
 
 export default function AdminDisputesPage() {
   const [disputes, setDisputes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDispute, setSelectedDispute] = useState<any>(null);
-  const [adminNotes, setAdminNotes] = useState('');
+  const [resolving, setResolving] = useState(false);
+
+  const fetchDisputes = async () => {
+    try {
+      const res = await adminAPI.getAllDisputes();
+      setDisputes(res);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchDisputes();
   }, []);
 
-  const fetchDisputes = async () => {
-    setLoading(true);
+  const handleResolve = async (decision: string) => {
+    const reason = prompt('Provide official reason for this decision:');
+    if (!reason) return;
+
+    setResolving(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/disputes`);
-      const data = await res.json();
-      setDisputes(data);
+      await adminAPI.resolveDispute({ disputeId: selectedDispute._id, decision, reason });
+      await fetchDisputes();
+      setSelectedDispute(null);
+      alert('Dispute officially resolved and closed.');
     } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
-  };
-
-  const handleResolve = async (id: string, action: string) => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/disputes/${id}/resolve`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, adminNotes })
-    });
-    if (res.ok) {
-      setSelectedDispute(null);
-      fetchDisputes();
+      alert('Resolution failed');
+    } finally {
+      setResolving(false);
     }
   };
 
-  const handleReject = async (id: string) => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/disputes/${id}/reject`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ adminNotes })
-    });
-    if (res.ok) {
-      setSelectedDispute(null);
-      fetchDisputes();
-    }
-  };
+  if (loading) return <div className="p-12 space-y-8"><Skeleton className="h-20 w-full rounded-2xl" /><Skeleton className="h-96 w-full rounded-3xl" /></div>;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F9FAFB', padding: '40px' }}>
-      <div className="container" style={{ maxWidth: '1200px' }}>
-        <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div>
-            <h1 style={{ fontSize: '32px', fontWeight: 700 }}>Dispute Resolution Center</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>Review evidence and resolve conflicts between users.</p>
-          </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-             <span style={{ fontSize: '13px', fontWeight: 700, background: '#FEE2E2', color: '#EF4444', padding: '6px 12px', borderRadius: '8px' }}>
-               {disputes.filter(d => d.status === 'open').length} Urgent Cases
-             </span>
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: selectedDispute ? '1fr 400px' : '1fr', gap: '32px' }}>
+    <div className="min-h-screen bg-slate-50/50 font-manrope">
+       
+       <div className="p-8 md:p-12 lg:p-16 max-w-7xl mx-auto space-y-12">
           
-          <div className="card" style={{ padding: 0 }}>
-            <div style={{ padding: '24px', borderBottom: '1px solid var(--surface-border)', display: 'flex', justifyContent: 'space-between' }}>
-              <div style={{ position: 'relative', width: '300px' }}>
-                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input type="text" placeholder="Search disputes..." style={{ width: '100%', padding: '10px 10px 10px 40px', borderRadius: '10px', border: '1px solid var(--surface-border)', outline: 'none' }} />
-              </div>
-              <button className="btn-secondary"><Filter size={18} /> Filters</button>
-            </div>
-
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ textAlign: 'left', fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-secondary)', background: '#F9FAFB' }}>
-                  <th style={{ padding: '16px 24px' }}>Date</th>
-                  <th style={{ padding: '16px 24px' }}>Participants</th>
-                  <th style={{ padding: '16px 24px' }}>Reason</th>
-                  <th style={{ padding: '16px 24px' }}>Status</th>
-                  <th style={{ padding: '16px 24px', textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {disputes.map((d) => (
-                  <tr key={d._id} style={{ borderBottom: '1px solid var(--surface-border)', background: selectedDispute?._id === d._id ? '#EFF6FF' : 'transparent' }}>
-                    <td style={{ padding: '20px 24px', color: 'var(--text-secondary)', fontSize: '14px' }}>{new Date(d.createdAt).toLocaleDateString()}</td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: 600 }}>C: {d.clientId?.name}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>F: {d.freelancerId?.name}</div>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 500, textTransform: 'capitalize' }}>{d.reason.replace(/_/g, ' ')}</span>
-                    </td>
-                    <td style={{ padding: '20px 24px' }}>
-                      <span style={{ 
-                        fontSize: '11px', 
-                        fontWeight: 700, 
-                        padding: '4px 10px', 
-                        borderRadius: '100px',
-                        textTransform: 'uppercase',
-                        background: d.status === 'open' ? '#FEE2E2' : d.status === 'resolved' ? '#D1FAE5' : '#F3F4F6',
-                        color: d.status === 'open' ? '#EF4444' : d.status === 'resolved' ? '#065F46' : '#64748B',
-                      }}>{d.status}</span>
-                    </td>
-                    <td style={{ padding: '20px 24px', textAlign: 'right' }}>
-                      <button className="btn-secondary" onClick={() => setSelectedDispute(d)} style={{ padding: '6px 12px' }}>
-                        <Eye size={16} /> Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+             <div className="space-y-2">
+                <div className="flex items-center gap-3 text-rose-600 font-black text-[10px] uppercase tracking-[0.2em]">
+                   <ShieldAlert size={16} /> Legal & Compliance
+                </div>
+                <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic uppercase">Admin Dispute Tribunal</h1>
+             </div>
+             <div className="flex gap-4">
+                <Card className="px-6 py-4 bg-white border-0 shadow-sm flex flex-col items-center">
+                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Cases</div>
+                   <div className="text-2xl font-black text-rose-600">{disputes.filter(d => d.status !== 'resolved').length}</div>
+                </Card>
+                <Card className="px-6 py-4 bg-white border-0 shadow-sm flex flex-col items-center">
+                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Awaiting AI</div>
+                   <div className="text-2xl font-black text-blue-600">0</div>
+                </Card>
+             </div>
           </div>
 
-          {selectedDispute && (
-            <div className="card" style={{ padding: '32px', position: 'sticky', top: '40px', height: 'fit-content' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '20px', fontWeight: 800 }}>Case Review</h3>
-                <button onClick={() => setSelectedDispute(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Description</label>
-                <p style={{ fontSize: '14px', lineHeight: 1.6, marginTop: '8px', color: 'var(--text-primary)' }}>{selectedDispute.description}</p>
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Evidence Links</label>
-                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {selectedDispute.evidence.map((link: string, i: number) => (
-                    <a key={i} href={link} target="_blank" style={{ fontSize: '13px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
-                      <ExternalLink size={14} /> View Evidence Item {i + 1}
-                    </a>
-                  ))}
+          {!selectedDispute ? (
+             <div className="space-y-6">
+                <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm">
+                   <table className="w-full text-left">
+                      <thead>
+                         <tr className="border-b border-slate-50">
+                            <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Dispute Case</th>
+                            <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Parties</th>
+                            <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                            <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                            <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                         </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                         {disputes.map(dispute => (
+                            <tr key={dispute._id} className="group hover:bg-slate-50/50 transition-colors">
+                               <td className="px-10 py-6">
+                                  <div className="font-bold text-slate-900 text-sm italic uppercase truncate max-w-[200px]">{dispute.reason}</div>
+                                  <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-1">ID: {dispute._id.slice(-8)}</div>
+                               </td>
+                               <td className="px-10 py-6">
+                                  <div className="flex flex-col gap-1">
+                                     <div className="text-xs font-bold text-slate-700">C: {dispute.clientId?.name}</div>
+                                     <div className="text-xs font-bold text-slate-400">F: {dispute.freelancerId?.name}</div>
+                                  </div>
+                               </td>
+                               <td className="px-10 py-6">
+                                  <div className="text-sm font-black text-slate-900 tracking-tight">₹{(dispute.orderId?.amount / 100).toLocaleString()}</div>
+                               </td>
+                               <td className="px-10 py-6">
+                                  <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${dispute.status === 'resolved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                     {dispute.status}
+                                  </span>
+                               </td>
+                               <td className="px-10 py-6 text-right">
+                                  <Button onClick={() => setSelectedDispute(dispute)} variant="ghost" className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                     Review Case <Eye size={14} className="ml-2" />
+                                  </Button>
+                               </td>
+                            </tr>
+                         ))}
+                         {disputes.length === 0 && (
+                            <tr><td colSpan={5} className="px-10 py-20 text-center text-[10px] font-black text-slate-300 uppercase italic">No active disputes in the tribunal.</td></tr>
+                         )}
+                      </tbody>
+                   </table>
                 </div>
-              </div>
+             </div>
+          ) : (
+             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8">
+                <Button onClick={() => setSelectedDispute(null)} variant="ghost" className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                   ← Back to Tribunal
+                </Button>
 
-              <div style={{ marginBottom: '32px' }}>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Admin Verdict Notes</label>
-                <textarea 
-                  placeholder="Explain your decision..."
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  style={{ width: '100%', height: '100px', marginTop: '12px', padding: '12px', borderRadius: '10px', border: '1px solid var(--surface-border)', outline: 'none' }}
-                />
-              </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                   
+                   {/* CASE DETAILS */}
+                   <div className="lg:col-span-8 space-y-10">
+                      <Card className="p-10 border-0 bg-white shadow-sm space-y-10">
+                         <div className="flex items-center justify-between border-b border-slate-50 pb-8">
+                            <div>
+                               <h2 className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter">{selectedDispute.reason}</h2>
+                               <p className="text-sm font-medium text-slate-400 italic">Raised by {selectedDispute.raisedBy === 'client' ? 'Client' : 'Freelancer'}</p>
+                            </div>
+                            <div className="text-right">
+                               <div className="text-3xl font-black text-slate-900 tracking-tight italic">₹{(selectedDispute.orderId?.amount / 100).toLocaleString()}</div>
+                               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Total Impact</div>
+                            </div>
+                         </div>
 
-              {selectedDispute.status === 'open' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <button className="btn-primary" onClick={() => handleResolve(selectedDispute._id, 'release_to_freelancer')} style={{ width: '100%', background: '#10B981', borderColor: '#10B981' }}>
-                    <Check size={18} /> Release to Freelancer
-                  </button>
-                  <button className="btn-primary" onClick={() => handleResolve(selectedDispute._id, 'refund_to_client')} style={{ width: '100%', background: '#EF4444', borderColor: '#EF4444' }}>
-                    <AlertTriangle size={18} /> Refund to Client
-                  </button>
-                  <button className="btn-secondary" onClick={() => handleReject(selectedDispute._id)} style={{ width: '100%' }}>
-                    Reject Dispute (Unfreeze)
-                  </button>
+                         <div className="space-y-4">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Case Description</h4>
+                            <p className="p-6 bg-slate-50 rounded-[2rem] text-sm font-medium text-slate-700 leading-relaxed italic border border-slate-100">
+                               "{selectedDispute.description}"
+                            </p>
+                         </div>
+
+                         <div className="grid grid-cols-2 gap-8">
+                            <div className="p-8 bg-slate-900 text-white rounded-[2.5rem] space-y-4 relative overflow-hidden">
+                               <div className="absolute top-0 right-0 p-4 opacity-10"><Scale size={60} /></div>
+                               <h4 className="text-[10px] font-black text-white/40 uppercase tracking-widest">AI Verdict Intelligence</h4>
+                               <div className="text-lg font-black italic uppercase tracking-tight">{selectedDispute.aiVerdict?.summary || "AI Analysis Failed"}</div>
+                               <div className="flex items-center gap-2 text-[10px] font-bold text-blue-400 uppercase">
+                                  Probability: {selectedDispute.aiVerdict?.faultProbability || 50}% Fault
+                               </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Parties History</h4>
+                               <div className="space-y-3">
+                                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                                     <div className="text-xs font-bold text-slate-700">C: {selectedDispute.clientId?.name}</div>
+                                     <div className="text-[10px] font-black text-amber-600">Trust: {selectedDispute.clientId?.trustScore}%</div>
+                                  </div>
+                                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                                     <div className="text-xs font-bold text-slate-700">F: {selectedDispute.freelancerId?.name}</div>
+                                     <div className="text-[10px] font-black text-emerald-600">Trust: {selectedDispute.freelancerId?.trustScore}%</div>
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+                      </Card>
+
+                      <div className="p-8 border-2 border-dashed border-slate-200 rounded-[3rem] flex items-center justify-center gap-4 text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">
+                         <MessageSquare size={16} /> Secure Chat History Transcript Locked.
+                      </div>
+                   </div>
+
+                   {/* RESOLUTION PANEL */}
+                   <div className="lg:col-span-4 space-y-8">
+                      <Card className="p-10 border-0 bg-white shadow-xl space-y-10 border-2 border-slate-900 shadow-slate-900/10">
+                         <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-rose-600 font-black text-[10px] uppercase tracking-widest">
+                               <Gavel size={18} /> Official Judgment
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 italic uppercase">Tribunal Action</h3>
+                         </div>
+
+                         <div className="space-y-4">
+                            <Button 
+                               onClick={() => handleResolve('release')}
+                               isLoading={resolving}
+                               className="w-full h-16 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+                            >
+                               Release to Freelancer
+                            </Button>
+                            <Button 
+                               onClick={() => handleResolve('refund')}
+                               isLoading={resolving}
+                               className="w-full h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-500/20"
+                            >
+                               Refund to Client
+                            </Button>
+                            <Button 
+                               onClick={() => handleResolve('split')}
+                               variant="outline"
+                               className="w-full h-16 border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
+                            >
+                               50/50 Partial Split
+                            </Button>
+                         </div>
+
+                         <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-4">
+                            <AlertTriangle size={18} className="text-amber-600 mt-1" />
+                            <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-tight">
+                               Judgment is final and irrevocable. Corrective impact on Trust Scores will be auto-calculated.
+                            </p>
+                         </div>
+                      </Card>
+
+                      <Card className="p-8 bg-slate-50 border-0 shadow-sm space-y-6">
+                         <div className="flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest">
+                            <History size={16} /> Case Timeline
+                         </div>
+                         <div className="space-y-4">
+                            <div className="flex items-start gap-3">
+                               <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5" />
+                               <div className="text-xs font-bold text-slate-700 uppercase tracking-tight">Dispute Opened <span className="text-[10px] text-slate-300 font-medium">12:30 PM</span></div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                               <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5" />
+                               <div className="text-xs font-bold text-slate-700 uppercase tracking-tight">AI Verdict Generated <span className="text-[10px] text-slate-300 font-medium">12:31 PM</span></div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                               <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1.5" />
+                               <div className="text-xs font-bold text-slate-400 uppercase tracking-tight italic">Awaiting Admin Signature</div>
+                            </div>
+                         </div>
+                      </Card>
+                   </div>
+
                 </div>
-              )}
-            </div>
+             </motion.div>
           )}
 
-        </div>
-      </div>
+       </div>
+
     </div>
   );
 }

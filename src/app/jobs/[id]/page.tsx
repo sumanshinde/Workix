@@ -6,23 +6,30 @@ import {
   Clock, ShieldCheck, CheckCircle2, 
   ArrowLeft, ArrowRight, Share2, Heart, MessageSquare, 
   Zap, Briefcase, Award, Globe, DollarSign, Users,
-  Calendar, FileText, Send, AlertCircle
+  Calendar, FileText, Send, AlertCircle, Sparkles
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jobsAPI, proposalsAPI } from '../../../services/api';
 import { Job } from '../../../types/index';
 import { BRANDING } from '../../../lib/config';
-import Sidebar from '../../../components/Sidebar';
+import SmartHireCard from '../../../components/jobs/SmartHireCard';
+import MatchingFreelancers from '../../../components/jobs/MatchingFreelancers';
 import { Button, Card, Input, Skeleton } from '../../../components/ui';
 
 export default function JobDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const [job, setJob] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showProposalForm, setShowProposalForm] = useState(false);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) setUser(JSON.parse(storedUser));
+  }, []);
   
   // Proposal Form State
   const [coverLetter, setCoverLetter] = useState('');
@@ -30,6 +37,7 @@ export default function JobDetailPage() {
   const [deliveryDays, setDeliveryDays] = useState(7);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -63,6 +71,18 @@ export default function JobDetailPage() {
       setError(err.message || 'Failed to submit proposal');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGenerateAI = async () => {
+    setAiGenerating(true);
+    try {
+      const data = await proposalsAPI.generateAI(id as string, "Expert full-stack developer with focus on reliability");
+      if (data.proposal) setCoverLetter(data.proposal);
+    } catch (err) {
+       console.error('AI Error:', err);
+    } finally {
+      setAiGenerating(false);
     }
   };
 
@@ -180,10 +200,15 @@ export default function JobDetailPage() {
                  )}
               </Card>
 
-              {/* Proposal Section */}
-              <div id="proposal-form">
+              {/* Smart Hiring / Proposal Section */}
+              <div id="proposal-form" className="space-y-12">
                  <AnimatePresence mode="wait">
-                    {!showProposalForm ? (
+                    {user?.role === 'client' && job?.clientId?._id === user?.id ? (
+                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
+                          <SmartHireCard jobId={id as string} budget={job.budget || 5000} />
+                          <MatchingFreelancers jobId={id as string} />
+                       </motion.div>
+                    ) : user?.role === 'freelancer' && !showProposalForm ? (
                        <motion.div 
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -193,14 +218,21 @@ export default function JobDetailPage() {
                           <div className="relative z-10">
                              <h3 className="text-2xl font-bold">Ready to contribute?</h3>
                              <p className="text-blue-100 font-medium max-w-md mt-2">
-                                Align your skills with this mandate and submit your professional proposal.
+                                Submit a proposal with the <span className="text-white font-bold underline decoration-blue-300">Lead Lock</span> protection. 
+                                Refund guaranteed if client stays inactive.
                              </p>
-                             <Button 
-                                onClick={() => setShowProposalForm(true)}
-                                className="mt-8 bg-white text-blue-600 hover:bg-gray-50 rounded-lg"
-                             >
-                                Submit Your Proposal
-                             </Button>
+                             <div className="flex flex-wrap items-center gap-4 mt-8">
+                                <Button 
+                                   onClick={() => setShowProposalForm(true)}
+                                   className="bg-white text-blue-600 hover:bg-gray-50 rounded-lg"
+                                >
+                                   Submit Your Proposal
+                                </Button>
+                                <div className="px-4 py-2 bg-blue-500/20 border border-white/10 rounded-lg flex items-center gap-2">
+                                   <Zap size={14} fill="currentColor" />
+                                   <span className="text-[10px] font-bold uppercase tracking-widest text-blue-50">Cost: 2 Credits</span>
+                                </div>
+                             </div>
                           </div>
                           <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full group-hover:bg-white/20 transition-all duration-700" />
                        </motion.div>
@@ -257,7 +289,18 @@ export default function JobDetailPage() {
                                    </div>
 
                                    <div className="space-y-3">
-                                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Cover Narrative</label>
+                                      <div className="flex items-center justify-between">
+                                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Cover Narrative</label>
+                                         <button 
+                                           type="button"
+                                           onClick={handleGenerateAI}
+                                           disabled={aiGenerating}
+                                           className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors disabled:opacity-50"
+                                         >
+                                            <Sparkles size={12} fill="currentColor" />
+                                            {aiGenerating ? 'Synthesizing...' : 'Magic: Write with AI'}
+                                         </button>
+                                      </div>
                                       <textarea 
                                          className="w-full min-h-[160px] p-6 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:border-blue-500 focus:bg-white transition-all text-gray-700 font-medium leading-relaxed"
                                          placeholder="Detail your competitive advantages and execution plan..."
@@ -337,14 +380,26 @@ export default function JobDetailPage() {
                        </div>
                     </div>
 
-                    <div className="space-y-3 pt-4 border-t border-gray-50">
-                       <div className="flex items-center gap-3 text-xs font-bold text-gray-500 uppercase tracking-widest">
-                          <Globe size={14} className="text-gray-300" /> Remote Cluster
-                       </div>
-                       <div className="flex items-center gap-3 text-xs font-bold text-gray-500 uppercase tracking-widest">
-                          <Briefcase size={14} className="text-gray-300" /> 12 Active Mandates
-                       </div>
-                    </div>
+                     <div className="space-y-4 pt-4 border-t border-gray-50">
+                        <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-3 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                              <Zap size={14} className="text-blue-500" /> Hire Rate
+                           </div>
+                           <span className="text-sm font-bold text-blue-600">{job.clientMetrics?.hireRate || 0}%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-3 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                              <MessageSquare size={14} className="text-emerald-500" /> Response
+                           </div>
+                           <span className="text-sm font-bold text-gray-900">{job.clientMetrics?.avgResponseTime || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-3 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                              <Globe size={14} className="text-gray-300" /> Location
+                           </div>
+                           <span className="text-sm font-bold text-gray-900">Remote India</span>
+                        </div>
+                     </div>
                  </Card>
 
               </section>

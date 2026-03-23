@@ -2,10 +2,9 @@ import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: function(this: any) { 
-    return !this.googleId && !this.githubId && !this.linkedinId; 
-  }},
+  email: { type: String, unique: true, sparse: true },
+  phone: { type: String, unique: true, sparse: true }, // For India-first mobile auth
+  password: { type: String }, // Optional for SSO or legacy users
   role: { type: String, enum: ['client', 'freelancer', 'admin'], default: 'freelancer' },
   avatar: { type: String, default: '' },
   googleId: { type: String, unique: true, sparse: true },
@@ -21,9 +20,28 @@ const userSchema = new mongoose.Schema({
   // Growth & Ranking
   rating: { type: Number, default: 0 },
   reviewsCount: { type: Number, default: 0 },
-  badge: { type: String, enum: ['', 'Top Rated', 'Rising Talent', 'Level 1', 'Level 2'], default: '' },
+  badge: { type: String, enum: ['', 'Top Rated', 'Rising Talent', 'Level 1', 'Level 2', 'BharatGig Pro'], default: '' },
   isFeatured: { type: Boolean, default: false },
-  isVerified: { type: Boolean, default: false },
+  
+  // KYC & Verification
+  isKycVerified: { type: Boolean, default: false },
+  panNumber: { type: String, sparse: true },
+  aadhaarHash: { type: String, sparse: true },
+  upiId: { type: String, sparse: true },
+  address: { type: String, default: '' },
+  state: { type: String, default: 'Maharashtra' }, // Default for mock
+  gstin: { type: String, sparse: true },
+  
+  // Lead Lock & Credits
+  availableCredits: { type: Number, default: 10 },
+  subscriptionStatus: { type: String, enum: ['free', 'pro', 'enterprise'], default: 'free' },
+  
+  // AI Matching Intelligence
+  trustScore: { type: Number, default: 75 }, // Default to 75% for new users
+  avgResponseTime: { type: Number, default: 60 }, // in minutes
+  completedJobs: { type: Number, default: 0 },
+  lastActive: { type: Date, default: Date.now },
+  hourlyRate: { type: Number, default: 500 },
   
   // Security & Fraud Control
   riskScore: { type: Number, default: 0 },

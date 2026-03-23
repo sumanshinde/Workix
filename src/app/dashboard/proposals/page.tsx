@@ -88,7 +88,7 @@ export default function ProposalsDashboard() {
                   proposal={proposal} 
                   isClient={user?.role === 'client'}
                   onHire={() => handleCreateContract(proposal)}
-                  onUpdateStatus={(s) => handleStatusUpdate(proposal._id, s)}
+                  onUpdateStatus={(s: string) => handleStatusUpdate(proposal._id, s)}
                   index={index}
                 />
              ))}

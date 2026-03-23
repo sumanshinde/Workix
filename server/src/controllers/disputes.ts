@@ -1,145 +1,89 @@
 import { Request, Response } from 'express';
 import Dispute from '../models/Dispute';
-import Escrow from '../models/Escrow';
-import { initiateRefund } from '../services/paymentService';
-import User from '../models/User';
-import { createNotification } from '../services/notificationService';
-import { sendEmail } from '../services/emailService';
+import Milestone from '../models/Milestone';
+import Order from '../models/Order';
+import aiService from '../services/aiService';
 
-export const createDispute = async (req: Request, res: Response) => {
+export const raiseDispute = async (req: Request, res: Response) => {
   try {
-    const { escrowId, raisedBy, reason, description, evidence } = req.body;
+    const { orderId, milestoneId, reason, description } = req.body;
+    const raisedBy = (req as any).user.id;
 
-    const escrow = await Escrow.findById(escrowId);
-    if (!escrow) return res.status(404).json({ message: 'Escrow not found' });
-
-    // Freeze the escrow
-    escrow.status = 'disputed';
-    await escrow.save();
-
-    const dispute = new Dispute({
-      escrowId,
-      clientId: escrow.clientId,
-      freelancerId: escrow.freelancerId,
+    // 1. Create Dispute Record
+    const dispute = await Dispute.create({
+      orderId,
+      milestoneId,
       raisedBy,
       reason,
       description,
-      evidence,
       status: 'open'
     });
 
-    await dispute.save();
-
-    // Notify both parties
-    await createNotification(
-      escrow.freelancerId.toString(),
-      'Dispute Raised',
-      `A dispute has been raised on your current project. Funds have been frozen.`,
-      'dispute',
-      '/dashboard/projects'
-    );
-
-    const freelancer: any = await User.findById(escrow.freelancerId);
-    if (freelancer) {
-      await sendEmail(
-        freelancer.email,
-        'Urgent: Project Dispute - BharatGig',
-        'A dispute has been raised regarding your recent project. Please visit the dashboard to review the case.'
-      );
+    // 2. Lock Milestone status
+    if (milestoneId) {
+      await Milestone.findByIdAndUpdate(milestoneId, { status: 'disputed' });
     }
 
-    res.status(201).json(dispute);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to create dispute', error: err });
-  }
-};
+    // 3. Trigger AI Analysis (Async)
+    const analysis = await aiService.analyzeDispute(
+      `${reason}: ${description}`,
+      "Chat history placeholder...", // Pull from Chat model if available
+      "Milestone description placeholder..."
+    );
 
-export const getDisputes = async (req: Request, res: Response) => {
-  try {
-    const disputes = await Dispute.find()
-      .populate('clientId', 'name email')
-      .populate('freelancerId', 'name email')
-      .populate('raisedBy', 'name')
-      .populate('escrowId')
-      .sort({ createdAt: -1 });
-    res.json(disputes);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch disputes', error: err });
+    dispute.aiSummary = analysis.summary;
+    dispute.aiFaultProbability = {
+      client: analysis.clientFault,
+      freelancer: analysis.freelancerFault
+    };
+    dispute.aiRecommendedResolution = analysis.recommendation;
+    dispute.status = 'reviewing';
+    await dispute.save();
+
+    res.json(dispute);
+  } catch (err: any) {
+    res.status(500).json({ message: 'Failed to raise dispute', error: err.message });
   }
 };
 
 export const resolveDispute = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { action, adminNotes } = req.body; // action: 'refund_to_client' or 'release_to_freelancer'
-
-    const dispute = await Dispute.findById(id).populate('escrowId');
+    const { resolution, adminOverride } = req.body;
+    const dispute = await Dispute.findById(id);
     if (!dispute) return res.status(404).json({ message: 'Dispute not found' });
 
-    const escrow: any = dispute.escrowId;
-
-    if (action === 'refund_to_client') {
-      // Logic for Razorpay Refund
-      if (escrow.paymentId) {
-        await initiateRefund(escrow.paymentId);
-      }
-      escrow.status = 'refunded';
-      dispute.resolution = 'refund_to_client';
-    } else if (action === 'release_to_freelancer') {
-      // Logic for Release to Wallet
-      await User.findByIdAndUpdate(escrow.freelancerId, {
-        $inc: { walletBalance: escrow.netFreelancerAmount }
-      });
-      escrow.status = 'released';
-      dispute.resolution = 'release_to_freelancer';
-    }
-
-    await escrow.save();
     dispute.status = 'resolved';
-    dispute.adminNotes = adminNotes;
-    dispute.resolvedAt = new Date();
+    dispute.resolution = resolution;
+    dispute.adminOverride = adminOverride || false;
     await dispute.save();
 
-    // Notify parties of resolution
-    await createNotification(
-      escrow.clientId.toString(),
-      'Dispute Resolved',
-      `Your dispute has been resolved: ${action.replace(/_/g, ' ')}`,
-      'dispute'
-    );
-    await createNotification(
-      escrow.freelancerId.toString(),
-      'Dispute Resolved',
-      `The dispute on your project has been resolved: ${action.replace(/_/g, ' ')}`,
-      'dispute'
-    );
+    // Update Milestone status based on resolution
+    if (dispute.milestoneId) {
+       const finalStatus = (resolution === 'release') ? 'released' : 'pending'; 
+       await Milestone.findByIdAndUpdate(dispute.milestoneId, { status: finalStatus });
+    }
 
-    res.json({ message: 'Dispute resolved successfully', dispute });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to resolve dispute', error: err });
+    res.json({ success: true, dispute });
+  } catch (err: any) {
+    res.status(500).json({ message: 'Resolution failed', error: err.message });
   }
 };
 
-export const rejectDispute = async (req: Request, res: Response) => {
+export const getDispute = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { adminNotes } = req.body;
+    const dispute = await Dispute.findById(req.params.id).populate('orderId');
+    res.json(dispute);
+  } catch (err: any) {
+    res.status(500).json({ message: 'Failed to fetch dispute', error: err.message });
+  }
+};
 
-    const dispute = await Dispute.findById(id).populate('escrowId');
-    if (!dispute) return res.status(404).json({ message: 'Dispute not found' });
-
-    const escrow: any = dispute.escrowId;
-    
-    // Unfreeze escrow - back to escrowed status
-    escrow.status = 'escrowed';
-    await escrow.save();
-
-    dispute.status = 'rejected';
-    dispute.adminNotes = adminNotes;
-    await dispute.save();
-
-    res.json({ message: 'Dispute rejected', dispute });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to reject dispute', error: err });
+export const getDisputes = async (req: Request, res: Response) => {
+  try {
+    const disputes = await Dispute.find().sort({ createdAt: -1 });
+    res.json(disputes);
+  } catch (err: any) {
+    res.status(500).json({ message: 'Failed to fetch disputes', error: err.message });
   }
 };

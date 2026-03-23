@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { createOrder, verifyPayment, releasePayment, refundPayment } from '../controllers/payments';
-import { authenticate, authorize } from '../middleware/auth';
 import crypto from 'crypto';
 import Escrow from '../models/Escrow';
+import { createOrder, verifyPayment, releasePayment, refundPayment, createGlobalPayment, withdrawFunds, getWallet } from '../controllers/payments';
+import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
 
@@ -10,6 +10,10 @@ router.post('/create-order', authenticate, createOrder);
 router.post('/verify', authenticate, verifyPayment);
 router.post('/release/:escrowId', authenticate, authorize(['client', 'admin']), releasePayment);
 router.post('/refund/:escrowId', authenticate, authorize(['admin']), refundPayment);
+
+router.post('/create-global', authenticate, createGlobalPayment);
+router.get('/wallet', authenticate, getWallet);
+router.post('/withdraw', authenticate, withdrawFunds);
 
 // Webhook for Razorpay
 router.post('/webhook', async (req, res) => {

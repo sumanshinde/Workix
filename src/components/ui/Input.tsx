@@ -25,16 +25,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ...props 
   }, ref) => {
     
-    const baseInputStyles = "w-full h-10 bg-white border border-[#e5e7eb] text-[#111827] rounded-lg px-3 text-sm transition-all duration-200 outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/5 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400 disabled:pointer-events-none";
-    const errorInputStyles = "border-[#ef4444] focus:border-[#ef4444] focus:ring-[#ef4444]/5";
-    const iconInputPadding = `${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-10' : ''}`;
+    // 48px height, rounded-xl, gray-50 bg, blue border focus with glow
+    const baseInputStyles = "w-full h-12 bg-slate-50 border border-slate-100 text-slate-900 rounded-xl px-4 text-[15px] font-medium transition-all duration-200 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 placeholder:text-slate-400 disabled:bg-slate-100 disabled:text-slate-400 disabled:pointer-events-none shadow-sm shadow-black/5";
+    const errorInputStyles = "border-red-500 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/15";
+    const iconInputPadding = `${leftIcon ? 'pl-11' : ''} ${rightIcon ? 'pr-11' : ''}`;
 
     return (
       <div className={`flex flex-col gap-1.5 w-full ${containerClassName}`}>
         {label && (
           <label 
             htmlFor={id} 
-            className="text-sm font-medium text-[#4b5563] pl-0.5"
+            className="text-[13px] font-bold text-slate-600 pl-0.5"
           >
             {label}
           </label>
@@ -42,8 +43,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         
         <div className="relative group">
           {leftIcon && (
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors pointer-events-none">
-              {leftIcon}
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+              {React.cloneElement(leftIcon as React.ReactElement, { size: 18 })}
             </div>
           )}
           
@@ -61,16 +62,16 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           />
           
           {rightIcon && (
-            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors ${props.type === 'button' ? 'cursor-pointer' : 'pointer-events-none'}`}>
-              {rightIcon}
+            <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors ${props.type === 'button' ? 'cursor-pointer' : 'pointer-events-none'}`}>
+              {React.cloneElement(rightIcon as React.ReactElement, { size: 18 })}
             </div>
           )}
         </div>
         
         {error ? (
-          <p className="text-[11px] font-semibold text-rose-500 pl-1">{error}</p>
+          <p className="text-[12px] font-bold text-red-500 pl-1">{error}</p>
         ) : hint ? (
-          <p className="text-[11px] font-medium text-gray-400 pl-1">{hint}</p>
+          <p className="text-[12px] font-medium text-slate-500 pl-1">{hint}</p>
         ) : null}
       </div>
     );

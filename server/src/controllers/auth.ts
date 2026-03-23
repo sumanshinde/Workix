@@ -53,7 +53,7 @@ export const googleLogin = async (req: Request, res: Response) => {
       await user.save();
     }
     
-    const { trackEvent } = await import('../services/analyticsService');
+    const { trackEvent } = await import('../services/AnalyticsService');
     await trackEvent('login_google', 'onboarding', user._id, { role: user.role });
 
     sendToken(user, 200, res);
@@ -100,12 +100,19 @@ export const register = async (req: Request, res: Response) => {
       } catch (err) { console.error('Referral creation failed', err); }
     }
 
-    const { trackEvent } = await import('../services/analyticsService');
+    const { trackEvent } = await import('../services/AnalyticsService');
     await trackEvent('signup_complete', 'onboarding', String(user._id), { role, referral: !!referrer });
 
+    // ── Strategic Growth: Experiment Conversion Tracking ──────────────────────
+    try {
+      const { ExperimentService } = require('../services/ExperimentService');
+      await ExperimentService.trackConversion('landing-page-hero', String(user._id));
+      await ExperimentService.trackConversion('onboarding-flow-v3', String(user._id));
+    } catch (e) { console.warn('Exp tracking failed during signup'); }
+
     sendToken(user, 201, res);
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Server error', error: err });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };
 
@@ -118,11 +125,95 @@ export const login = async (req: Request, res: Response) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid credentials' });
 
-    const { trackEvent } = await import('../services/analyticsService');
+    const { trackEvent } = await import('../services/AnalyticsService');
     await trackEvent('login_credentials', 'onboarding', user._id, { role: user.role });
 
     sendToken(user, 200, res);
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error', error: err });
+  }
+};
+
+import OTP from '../models/OTP';
+
+/**
+ * MOCK: WhatsApp / SMS Service
+ * In production, integration with Twilio / Gupshup / MSG91 happens here.
+ */
+const sendOTPToProvider = async (phone: string, code: string, method: 'whatsapp' | 'sms') => {
+  console.log(`[AUTH_PROVIDER] Sending ${code} to ${phone} via ${method.toUpperCase()}`);
+  return true;
+};
+
+// ── Send OTP (WhatsApp Primary) ─────────────────────────────────────────────
+export const sendOTP = async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: 'Phone number is required' });
+
+    // Generate 6-digit OTP
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
+
+    // Delete existing OTP for this phone
+    await OTP.deleteMany({ phone });
+
+    // Save hashed OTP
+    await OTP.create({ phone, code, expiresAt });
+
+    // Try sending via WhatsApp first, then SMS fallback
+    const sent = await sendOTPToProvider(phone, code, 'whatsapp');
+    if (!sent) await sendOTPToProvider(phone, code, 'sms');
+
+    res.status(200).json({ success: true, message: 'OTP sent successfully' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'OTP transmission failed', error: err.message });
+  }
+};
+
+// ── Verify OTP & Login/Register ─────────────────────────────────────────────
+export const verifyOTP = async (req: Request, res: Response) => {
+  try {
+    const { phone, code, role } = req.body; 
+    if (!phone || !code) return res.status(400).json({ message: 'Phone and code required' });
+
+    const otpRecord = (await OTP.findOne({ phone })) as any;
+    if (!otpRecord) return res.status(400).json({ message: 'OTP expired or not found' });
+
+    if (otpRecord.attempts >= 5) {
+       await OTP.deleteOne({ phone });
+       return res.status(403).json({ message: 'Maximum attempts reached. Request new OTP.' });
+    }
+
+    const isMatched = await otpRecord.compareOTP(code);
+    if (!isMatched) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // OTP Valid - Proceed to Auth
+    let user: any = await User.findOne({ phone });
+    let isNewUser = false;
+
+    if (!user) {
+      isNewUser = true;
+      user = new User({
+        name: `User_${phone.slice(-4)}`, // Placeholder name
+        phone,
+        role: role || 'freelancer', // Default role if not provided
+        availableCredits: 10,
+        isKycVerified: false
+      });
+      await user.save();
+    }
+
+    // Clear OTP record
+    await OTP.deleteOne({ phone });
+
+    // Generate and Set Cookie
+    sendToken(user, 200, res);
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Verification failed', error: err.message });
   }
 };

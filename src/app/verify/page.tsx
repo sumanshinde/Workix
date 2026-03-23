@@ -72,7 +72,7 @@ export default function VerificationPage() {
 
                 {/* Progress Indicators */}
                 <div className="flex justify-center gap-8 border-b border-gray-100 pb-8">
-                   {[1, 2, 3].map((s) => (
+                   {[1, 2, 3].map((s: number) => (
                      <div key={s} className="flex items-center gap-3">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${step >= s ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-400'}`}>
                            {step > s ? <Check size={12} /> : s}

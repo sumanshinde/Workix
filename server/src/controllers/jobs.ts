@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Job from '../models/Job';
+import aiService from '../services/aiService';
 
 // ── Create job ──────────────────────────────────────────────────────────────
 export const createJob = async (req: Request, res: Response) => {
@@ -7,10 +8,29 @@ export const createJob = async (req: Request, res: Response) => {
     const { title, description, category, budget, budgetType, skills, experienceLevel, deadline, scope } = req.body;
     const clientId = (req as any).user?.id;
     const job = new Job({ title, description, category, budget, budgetType, skills, experienceLevel, deadline, scope, clientId, status: 'open' });
-    await job.save();
-    res.status(201).json(job);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+    const savedJob = await job.save();
+
+    // ── Retention Trigger: Notification to Matching Freelancers ──────────────
+    const { createNotification } = require('../services/notificationService');
+    const User = require('../models/User').default;
+    const matchingFreelancers = await User.find({ 
+       role: 'freelancer', 
+       skills: { $in: skills } 
+    }).limit(3);
+
+    for (const f of matchingFreelancers) {
+       await createNotification(
+          f._id,
+          '🔥 New Job Match For You',
+          `A new project for "${title}" matches your top skills. Apply now!`,
+          'job_match',
+          `/jobs/${savedJob._id}`
+       );
+    }
+
+    res.status(201).json(savedJob);
+  } catch (err: any) {
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
@@ -42,14 +62,26 @@ export const getJobs = async (req: Request, res: Response) => {
   }
 };
 
+import { LeadLockService } from '../services/leadLockService';
+
 // ── Get single job ──────────────────────────────────────────────────────────
 export const getJobById = async (req: Request, res: Response) => {
   try {
-    const job = await Job.findById(req.params.id).populate('clientId', 'name avatar email');
+    const job = await Job.findById(req.params.id).populate('clientId', 'name avatar email riskScore isVerified isKycVerified');
     if (!job) return res.status(404).json({ message: 'Job not found' });
-    res.json(job);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+    
+    // Add Client Hire Metrics for Lead Lock transparency
+    const hireMetrics = await LeadLockService.getClientHireMetrics(job.clientId._id.toString());
+    
+    // Update views asynchronously
+    Job.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } }).exec();
+
+    res.json({ 
+      ...job.toObject(), 
+      clientMetrics: hireMetrics 
+    });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Server error', error: err });
   }
 };
 
@@ -87,5 +119,31 @@ export const getMyJobs = async (req: Request, res: Response) => {
     res.json(jobs);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err });
+  }
+};
+
+import { MatchingService } from '../services/matchingService';
+
+// ── AI: Smart job suggestions (suggestions/desc/skills) ────────────────────
+export const getJobMatches = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const matches = await MatchingService.getTopMatches(id as string);
+    res.json(matches);
+  } catch (err: any) {
+    res.status(500).json({ message: 'Matching failed', error: err.message });
+  }
+};
+
+export const generateJobAI = async (req: Request, res: Response) => {
+  try {
+    const { title, category } = req.body;
+    if (!title) return res.status(400).json({ message: 'Title is required' });
+    
+    const description = await aiService.generateJobDescription(title, category || 'General');
+    const skills = await aiService.suggestSkills(title, description);
+    res.json({ description, skills });
+  } catch (err) {
+    res.status(500).json({ message: 'AI generation failed', error: err });
   }
 };

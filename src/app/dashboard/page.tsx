@@ -1,320 +1,241 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
-  ChevronRight, TrendingUp, Wallet, 
-  Briefcase, Clock, FileText, CheckCircle2,
-  Bell, Search, Zap, ArrowUpRight, ArrowDownRight,
-  Sparkles, ShieldCheck, PieChart, Target,
-  Cpu, Activity
+  LayoutDashboard, LayoutGrid, Zap, TrendingUp, Wallet, Shield, 
+  FileText, Bell, Plus, ArrowUpRight, Target, ChevronRight, Cpu 
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { BRANDING } from '@/lib/config';
-import Sidebar from '@/components/Sidebar';
-import { Button, Card, Skeleton } from '@/components/ui';
-import { dashboardAPI, analyticsAPI } from '@/services/api';
+import { dashboardAPI } from '../../services/api';
+import { Button, Card, Skeleton } from '../../components/ui';
 
-export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
-  const [data, setData] = useState<any>(null);
+// Widgets
+import WalletDashboard from '../../components/dashboard/WalletDashboard';
+import PortfolioOptimizer from '../../components/dashboard/PortfolioOptimizer';
+import CreditScoreCard from '../../components/dashboard/CreditScoreCard';
+import TaxDashboard from '../../components/dashboard/TaxDashboard';
+
+export default function MasterDashboard() {
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
-  const { data: session, status } = useSession();
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    const token = localStorage.getItem('token') || (session as any)?.backendToken;
-    const rawUser = localStorage.getItem('user');
-    const localUser = rawUser ? JSON.parse(rawUser) : null;
-    const currentUser = session?.user || localUser;
-
-    if (!currentUser || !token) {
-      if (status === 'unauthenticated' && !localUser) {
-        window.location.href = '/login';
-      }
-      return;
-    }
-
-    // Sync state
-    if (!user) setUser(currentUser);
-    if (!rawUser) localStorage.setItem('user', JSON.stringify(currentUser));
-    if (!localStorage.getItem('token') && (session as any)?.backendToken) {
-      localStorage.setItem('token', (session as any).backendToken);
-    }
-
-    // Prevent re-fetch if we have data
-    if (data) return;
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const result = (currentUser as any).role === 'client' 
-          ? await dashboardAPI.client() 
-          : await dashboardAPI.freelancer();
-        setData(result);
-      } catch (err: any) {
-        console.error('[Dashboard] Fetch Error:', err);
-        if (err.status === 401) {
-          localStorage.clear();
-          window.location.href = '/login';
-        }
-      } finally {
-        setLoading(false);
-      }
+    const fetchStats = async () => {
+       try {
+          const res = await dashboardAPI.getStats();
+          setStats(res);
+       } catch (err) {
+          console.error(err);
+       } finally {
+          setLoading(false);
+       }
     };
-    fetchData();
-  }, [user, data, session, status]);
+    fetchStats();
+  }, []);
 
-  if (!user && !loading) return null;
+  if (loading) return <div className="p-12 space-y-8"><Skeleton className="h-20 w-full rounded-2xl" /><Skeleton className="h-96 w-full rounded-3xl" /></div>;
+  if (!stats) return null;
+
+  const summaryItems = [
+     { label: 'Total Earnings', value: `₹${stats.summary.earnings.toLocaleString()}`, icon: <TrendingUp size={18} className="text-emerald-500" /> },
+     { label: 'Active Orders', value: stats.summary.activeOrders, icon: <Zap size={18} className="text-blue-500" /> },
+     { label: 'Wallet Balance', value: `₹${stats.summary.pendingPayments.toLocaleString()}`, icon: <Wallet size={18} className="text-amber-500" /> },
+     { label: 'Profile Score', value: `${stats.summary.profileScore}/100`, icon: <Target size={18} className="text-purple-500" /> }
+  ];
 
   return (
-    <div className="space-y-8 pb-10">
-      
-      {/* ── ONBOARDING / ACTIVATION ── */}
-      {!loading && user?.role === 'freelancer' && (
-        <Card className="p-8 border-blue-100 rounded-[32px] overflow-hidden relative">
-          
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="space-y-4 text-center md:text-left">
-               <h2 className="text-2xl font-semibold text-[#111827]">Complete your profile to get your first job</h2>
-               <p className="text-sm text-gray-500 font-medium max-w-sm">Profiles with 100% completion receive <span className="text-blue-600 font-bold">5x more invitations</span>.</p>
-               
-               <div className="space-y-2 pt-2">
-                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                     <span>Profile Sync Status</span>
-                     <span className="text-blue-600">65%</span>
-                  </div>
-                  <div className="h-2 w-full bg-blue-100 rounded-full overflow-hidden">
-                     <div className="h-full bg-blue-600 w-[65%] rounded-full shadow-sm shadow-blue-500/20" />
-                  </div>
-               </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-               <Button 
-                 onClick={() => { analyticsAPI.track('activation_bio_click', 'profile'); router.push('/profile'); }}
-                 className="bg-blue-600 text-white rounded-lg font-bold shadow-sm shadow-blue-500/20 hover:bg-blue-700 active:scale-95"
-               >
-                  Complete Profile
-               </Button>
-               <Button 
-                 onClick={() => { analyticsAPI.track('activation_mission_click', 'profile'); router.push('/post-job'); }}
-                 className="bg-white border border-blue-100 text-blue-600 rounded-lg font-bold hover:bg-blue-50 shadow-sm"
-               >
-                  Create Gig
-               </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* 1. Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div className="space-y-1">
-           {loading ? (
-             <div className="space-y-2">
-               <Skeleton width={200} height={32} />
-               <Skeleton width={400} height={20} variant="text" />
+    <div className="min-h-screen bg-slate-50/50 font-manrope">
+       
+       {/* TOP NAV BAR */}
+       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+             <div className="p-2.5 bg-slate-900 rounded-2xl text-white shadow-xl shadow-slate-900/10">
+                <LayoutDashboard size={20} />
              </div>
-           ) : (
-             <>
-               <h1 className="text-3xl font-bold text-[#111827]">Welcome back, {user?.name.split(' ')[0]}</h1>
-               <p className="text-base text-[#6b7280]">Here's what's happening with your projects today.</p>
-             </>
-           )}
-        </div>
-
-        <div className="flex items-center gap-4">
-           {!loading && (
-             <>
-               <Button 
-                 variant="outline"
-                 onClick={() => router.push(user?.role === 'client' ? '/dashboard/proposals' : '/marketplace')} 
-               >
-                  {user?.role === 'client' ? 'View Proposals' : 'Find Jobs'}
-               </Button>
-               {user?.role === 'client' && (
-                 <Button onClick={() => router.push('/post-job')} className="">
-                    Post a Project
-                 </Button>
-               )}
-             </>
-           )}
-        </div>
-      </header>
-
-      {/* 2. STATS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {loading ? (
-          [1, 2, 3].map(i => <Skeleton key={i} height={160} />)
-        ) : (
-          <>
-            <StatCard 
-              label={user?.role === 'client' ? 'Active Projects' : 'Active Proposals'} 
-              value={user?.role === 'client' ? data?.jobs?.length || 0 : data?.proposals?.length || 0} 
-              trend="+12%" 
-              color="blue" 
-              icon={<Briefcase size={20} />} 
-            />
-            <StatCard 
-              label="Total Earnings" 
-              value="₹0" 
-              trend="0%" 
-              color="rose" 
-              icon={<Wallet size={20} />} 
-            />
-            <StatCard 
-              label="Success Score" 
-              value={(data?.proposals?.length || data?.jobs?.length || 0) > 0 ? "100%" : "New"} 
-              trend={(data?.proposals?.length || data?.jobs?.length || 0) > 0 ? "Elite" : "Welcome"} 
-              color="emerald" 
-              icon={<Zap size={20} />} 
-            />
-          </>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-        {/* 3. Projects Table */}
-        <div className="xl:col-span-8 space-y-6">
-            {loading ? (
-              <Skeleton height={400} />
-            ) : (
-              <Card padding="none">
-                <div className="py-4 border-b border-[#e5e7eb] flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-[#111827]">
-                      {user?.role === 'client' ? 'Recent Job Posts' : 'Submitted Proposals'}
-                    </h3>
-                    <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/proposals')}>View All</Button>
+             <h1 className="text-xl font-black text-slate-900 tracking-tight italic uppercase">Control Center</h1>
+          </div>
+          <div className="flex items-center gap-6">
+             <button className="relative p-2 text-slate-400 hover:text-slate-900 transition-colors">
+                <Bell size={20} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+             </button>
+             <div className="h-8 w-px bg-slate-100" />
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-100 border-2 border-white shadow-sm overflow-hidden">
+                   <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Avatar" />
                 </div>
-                <div className="divide-y divide-gray-50">
-                    {user?.role === 'client' ? (
-                      data?.jobs?.length > 0 ? data.jobs.slice(0, 5).map((job: any) => (
-                        <ProjectRow key={job._id} title={job.title} client={`Status: ${job.status}`} status={job.category} progress={job.proposals?.length || 0} progressLabel="Proposals" />
-                      )) : (
-                        <div className="p-12 flex flex-col items-center justify-center space-y-4">
-                           <div className="text-gray-500 text-sm font-medium">No active project posts yet.</div>
-                           <Button onClick={() => router.push('/post-job')}>Post a Project</Button>
-                        </div>
-                      )
-                    ) : (
-                      data?.proposals?.length > 0 ? data.proposals.slice(0, 5).map((prop: any) => (
-                        <ProjectRow key={prop._id} title={prop.jobId?.title} client={`Bid: ₹${prop.bidAmount}`} status={prop.status} progress={prop.deliveryDays} progressLabel="Days" />
-                      )) : (
-                        <div className="p-12 flex flex-col items-center justify-center space-y-4">
-                           <div className="text-gray-500 text-sm font-medium">No submitted proposals yet.</div>
-                           <Button onClick={() => router.push('/marketplace')}>Browse Jobs</Button>
-                        </div>
-                      )
-                    )}
+                <div className="hidden md:block">
+                   <div className="text-xs font-black text-slate-900 uppercase">Felix Dev</div>
+                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stats.role}</div>
                 </div>
-              </Card>
-            )}
-        </div>
+             </div>
+          </div>
+       </div>
 
-        {/* 4. Side Info */}
-        <div className="xl:col-span-4 space-y-10">
-            {loading ? (
-              <Skeleton height={240} className="mb-10" />
-            ) : (
-              <Card className="mb-6">
-                <h3 className="mb-6 text-base font-semibold text-[#111827]">Upcoming Deadlines</h3>
+       <div className="p-8 md:p-12 max-w-[1600px] mx-auto space-y-10">
+          
+          {/* SUMMARY GRID */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+             {summaryItems.map((item, i) => (
+                <Card key={i} className="p-6 border-0 bg-white shadow-sm hover:shadow-md transition-shadow group cursor-default">
+                   <div className="flex items-center justify-between mb-2">
+                       <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-slate-100 transition-colors">
+                          {item.icon}
+                       </div>
+                       <ArrowUpRight size={14} className="text-slate-200 group-hover:text-slate-400 transition-colors" />
+                   </div>
+                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</div>
+                   <div className="text-2xl font-black text-slate-900 italic">{item.value}</div>
+                </Card>
+             ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+             
+             {/* LEFT COLUMN: PRIMARY INTELLIGENCE */}
+             <div className="lg:col-span-8 space-y-10">
+                
+                {/* TABS CONTROLLER */}
+                <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl w-fit">
+                   {[
+                      { id: 'overview', label: 'Intelligence Hub', icon: <Cpu size={14} /> },
+                      { id: 'wallet', label: 'Financials', icon: <Wallet size={14} /> },
+                      { id: 'tax', label: 'Tax & GST', icon: <FileText size={14} /> }
+                   ].map(tab => (
+                      <button 
+                         key={tab.id}
+                         onClick={() => setActiveTab(tab.id)}
+                         className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      >
+                         {tab.icon} {tab.label}
+                      </button>
+                   ))}
+                </div>
+
+                <div className="space-y-10">
+                   {activeTab === 'overview' && (
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
+                         <PortfolioOptimizer />
+                         <CreditScoreCard />
+                         
+                         <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                               <h3 className="text-xl font-black text-slate-900 tracking-tight italic uppercase">Active Work Streams</h3>
+                               <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">View All Projects</button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                               {stats.orders.length === 0 ? (
+                                  <div className="col-span-2 p-12 text-center border-2 border-dashed border-slate-200 rounded-[2rem] text-slate-300 font-bold uppercase text-[10px] tracking-widest">No active work detected.</div>
+                               ) : (
+                                  stats.orders.map((order: any) => (
+                                     <Card key={order._id} className="p-6 bg-white border-0 shadow-sm space-y-6 group hover:border-blue-100 border-2 border-transparent transition-all">
+                                        <div className="flex items-center justify-between">
+                                           <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[8px] font-black uppercase tracking-widest">Active Order</div>
+                                           <div className="text-[10px] font-black text-slate-900 italic">₹{(order.amount / 100).toLocaleString()}</div>
+                                        </div>
+                                        <h4 className="font-black text-slate-900 uppercase text-xs tracking-tight">{order.jobId?.title || "Custom Project"}</h4>
+                                        <div className="space-y-2">
+                                           <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                              <span>Progress</span>
+                                              <span>65%</span>
+                                           </div>
+                                           <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden">
+                                              <div className="h-full bg-blue-600 w-[65%]" />
+                                           </div>
+                                        </div>
+                                        <Button variant="ghost" className="w-full h-10 rounded-xl text-[10px] font-black uppercase tracking-widest group-hover:bg-blue-600 group-hover:text-white">
+                                           Manage Project <ChevronRight size={14} className="ml-1" />
+                                        </Button>
+                                     </Card>
+                                  ))
+                               )}
+                            </div>
+                         </div>
+                      </motion.div>
+                   )}
+
+                   {activeTab === 'wallet' && (
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                         <WalletDashboard />
+                      </motion.div>
+                   )}
+
+                   {activeTab === 'tax' && (
+                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                         <TaxDashboard />
+                      </motion.div>
+                   )}
+                </div>
+
+             </div>
+
+             {/* RIGHT COLUMN: QUICK ACTIONS & INSIGHTS */}
+             <div className="lg:col-span-4 space-y-10">
+                
+                <Card className="p-8 bg-slate-900 text-white border-0 shadow-2xl space-y-8 relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-4 opacity-10">
+                      <Zap size={100} />
+                   </div>
+                   <div className="space-y-2 relative z-10">
+                      <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Global Insights</div>
+                      <h3 className="text-2xl font-black italic tracking-tight">AI POTENTIAL</h3>
+                   </div>
+                   <div className="space-y-6 relative z-10">
+                      <div className="p-5 bg-white/5 rounded-2xl border border-white/10 space-y-3">
+                         <div className="text-[8px] font-black text-white/40 uppercase tracking-widest">Earning Boost</div>
+                         <div className="text-3xl font-black text-white italic">+ ₹12,450</div>
+                         <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic">"By optimizing your skills for 'React Native', you could unlock high-demand mobile gigs."</p>
+                      </div>
+                      <Button className="w-full h-14 bg-blue-600 hover:bg-blue-700 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20">
+                         View AI Career Roadmap
+                      </Button>
+                   </div>
+                </Card>
+
                 <div className="space-y-4">
-                    {data?.contracts?.length > 0 ? data.contracts.slice(0, 3).map((contract: any) => {
-                      const date = new Date(contract.createdAt);
-                      const day = date.getDate();
-                      const month = date.toLocaleString('default', { month: 'short' });
-                      return (
-                        <DeadlineItem key={contract._id} date={`${day} ${month}`} title="Active Engagement" project={contract.jobId?.title || 'System Project'} />
-                      );
-                    }) : (
-                      <div className="py-8 text-center text-[#6b7280] text-sm font-medium">No upcoming project deadlines.</div>
-                    )}
+                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">System Commands</h4>
+                   <div className="grid grid-cols-2 gap-4">
+                      <button className="p-6 bg-white rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center gap-3 hover:border-blue-200 transition-all hover:translate-y-[-2px] group">
+                         <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                            <Plus size={20} />
+                         </div>
+                         <span className="text-[10px] font-black uppercase tracking-widest">New Gig</span>
+                      </button>
+                      <button className="p-6 bg-white rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center gap-3 hover:border-emerald-200 transition-all hover:translate-y-[-2px] group">
+                         <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                            <ArrowUpRight size={20} />
+                         </div>
+                         <span className="text-[10px] font-black uppercase tracking-widest">Withdraw</span>
+                      </button>
+                   </div>
                 </div>
-              </Card>
-            )}
 
-            <div className="p-6 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-4 group cursor-pointer hover:bg-blue-100/50 transition-all">
-               <div className="w-10 h-10-lg-600 shadow-sm">
-                  <ShieldCheck size={20} />
-               </div>
-               <div className="flex-1">
-                  <div className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Account Security</div>
-                  <div className="text-sm font-bold text-blue-900">Verified Professional</div>
-               </div>
-               <ArrowUpRight size={16} className="text-blue-400 group-hover:text-blue-600 transition-colors" />
-            </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+                <Card className="p-8 bg-white border-0 shadow-sm space-y-6">
+                   <div className="flex items-center gap-2">
+                      <Shield size={18} className="text-slate-400" />
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Security Health</h4>
+                   </div>
+                   <div className="space-y-4">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                         <span className="text-slate-600">KYC Verification</span>
+                         <span className="text-emerald-500">Completed</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs font-bold">
+                         <span className="text-slate-600">2FA Status</span>
+                         <span className="text-rose-500 underline cursor-pointer">Disabled</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs font-bold">
+                         <span className="text-slate-600">Risk Score</span>
+                         <span className="text-slate-900 italic font-black">0.05 (Low)</span>
+                      </div>
+                   </div>
+                </Card>
 
-function StatCard({ label, value, trend, icon, color = 'blue' }: any) {
-  const colors: any = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-100',
-    rose: 'bg-rose-50 text-rose-600 border-rose-100',
-    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-  };
-  
-  return (
-    <Card className="flex flex-col justify-between group p-6 h-full relative overflow-hidden transition-all hover:border-blue-200">
-     <div className="space-y-6 relative z-10">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${colors[color]} shadow-sm`}>{icon}</div>
-        <div className="space-y-1">
-           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</div>
-           <div className="flex items-end gap-3">
-              <h2 className="text-3xl font-bold text-[#111827]">{value}</h2>
-              <span className="text-[10px] font-bold text-emerald-500 mb-1.5 flex items-center gap-0.5">
-                 {trend} <TrendingUp size={10} />
-              </span>
-           </div>
-        </div>
-     </div>
-     <div className={`absolute -right-4 -bottom-4 w-24 h-24 opacity-[0.03] text-blue-900 transition-transform group-hover:scale-110`}>
-        {React.cloneElement(icon as React.ReactElement, { size: 96 })}
-     </div>
-    </Card>
-  );
-}
+             </div>
 
-function ProjectRow({ title, client, status, progress, progressLabel = '%' }: any) {
-  return (
-    <div className="py-5 flex flex-col md:flex-row items-center gap-4 hover:bg-gray-50 transition-colors cursor-pointer group">
-       <div className="flex-1 space-y-1">
-          <h4 className="text-[15px] font-bold text-[#111827] group-hover:text-blue-600 transition-colors line-clamp-1">{title}</h4>
-          <p className="text-xs font-medium text-[#6b7280]">{client}</p>
+          </div>
        </div>
-       <div className="text-sm font-bold text-blue-600">
-          {progress} {progressLabel}
-       </div>
-       <div className="md:w-32 flex justify-end">
-          <span className={`text-[10px] font-bold px-3 py-1 rounded-md border uppercase tracking-wider ${
-            status === 'Revision' || status === 'rejected' ? 'bg-rose-50 border-rose-100 text-rose-600' : 
-            status === 'accepted' || status === 'completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-            'bg-blue-50 border-blue-100 text-blue-600'
-          }`}>
-             {status}
-          </span>
-       </div>
-    </div>
-  );
-}
-
-function DeadlineItem({ date, title, project }: any) {
-  return (
-    <div className="flex items-center gap-4 group cursor-pointer hover:translate-x-1 transition-transform">
-       <div className="w-12 rounded-lg border border-gray-100 bg-gray-50 flex flex-col items-center justify-center">
-          <span className="text-[10px] font-semibold text-gray-500 uppercase">{date.split(' ')[1]}</span>
-          <span className="text-sm font-bold text-gray-900">{date.split(' ')[0]}</span>
-       </div>
-       <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors truncate">{title}</h4>
-          <p className="text-xs text-gray-500 truncate">{project}</p>
-       </div>
-       <ChevronRight size={14} className="text-gray-300 transition-colors" />
     </div>
   );
 }

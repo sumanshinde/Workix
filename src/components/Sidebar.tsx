@@ -36,24 +36,24 @@ const SidebarItem = ({ icon, label, path, active, collapsed, onClick, badge }: S
   return (
     <div
       onClick={onClick}
-      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 border ${
+      className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300 border ${
         active 
-          ? 'bg-blue-50/50 text-blue-600 border-blue-100' 
-          : 'text-gray-500 border-transparent hover:bg-gray-50 hover:text-gray-900 focus:bg-gray-50 focus:text-gray-900'
+          ? 'bg-blue-50/80 text-blue-600 border-blue-100 shadow-sm shadow-blue-500/5' 
+          : 'text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-900 shadow-none'
       }`}
     >
-      <div className={`flex items-center justify-center ${active ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'} transition-colors`}>
-        {React.cloneElement(icon as React.ReactElement, { size: 18, strokeWidth: active ? 2.5 : 2 })}
+      <div className={`flex items-center justify-center transition-colors ${active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600'}`}>
+        {React.cloneElement(icon as React.ReactElement, { size: 20, strokeWidth: active ? 2.5 : 2 })}
       </div>
       
       {!collapsed && (
-        <span className={`text-sm font-medium whitespace-nowrap ${active ? 'font-semibold' : ''}`}>
+        <span className={`text-[15px] font-medium whitespace-nowrap transition-all ${active ? 'font-extrabold text-blue-900' : 'group-hover:translate-x-0.5'}`}>
           {label}
         </span>
       )}
 
       {badge && !collapsed && (
-        <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-600">
+        <span className="ml-auto inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-blue-100 text-blue-700 shadow-sm border border-blue-200">
           {badge}
         </span>
       )}
@@ -69,14 +69,10 @@ export default function SaaSSidebar() {
 
   const handleLogout = async () => {
     try {
-      // 1. Clear backend cookie
       await authAPI.logout();
-      // 2. Clear next-auth session
       await signOut({ redirect: false });
-      // 3. Clear localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // 4. Redirect
       router.push('/login');
     } catch (err) {
       console.error('Logout failed', err);
@@ -109,18 +105,16 @@ export default function SaaSSidebar() {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-100 flex flex-col z-[100] transition-all duration-300 ${collapsed ? 'w-[72px]' : 'w-[256px]'}`}
+      className={`fixed left-0 top-0 h-screen bg-white/70 backdrop-blur-xl border-r border-slate-200 flex flex-col z-[100] transition-all duration-300 shadow-soft ${collapsed ? 'w-[80px]' : 'w-[260px]'}`}
     >
       {/* BRANDING HEADER */}
-      <div className={`h-16 flex items-center ${collapsed ? 'justify-center' : 'px-6'} relative border-b border-gray-100`}>
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/')}>
-          <div className="w-10 h-10-lg">
+      <div className={`h-[88px] flex items-center ${collapsed ? 'justify-center' : 'px-6'} relative border-b border-slate-100`}>
+        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => router.push('/')}>
+          <div className="w-10 h-10-xl bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-extrabold text-[15px] shadow-sm shadow-blue-500/20 group-hover:scale-105 transition-transform">
             {BRANDING.shortName}
           </div>
           {!collapsed && (
-            <span 
-              className="font-semibold text-xl text-gray-900 tracking-tight"
-            >
+            <span className="font-extrabold text-xl text-slate-900 tracking-tight">
               {BRANDING.name}
             </span>
           )}
@@ -128,20 +122,20 @@ export default function SaaSSidebar() {
         
         <button 
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-blue-600 transition-all z-50 hover:bg-gray-50"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 w-7 h-7 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all z-50 shadow-sm"
         >
           <div className={`transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`}>
-            <ChevronRight size={10} />
+            <ChevronRight size={14} />
           </div>
         </button>
       </div>
 
       {/* NAVIGATION */}
-      <nav className="flex-1 px-3 mt-6 space-y-1 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 px-4 mt-6 space-y-1.5 overflow-y-auto no-scrollbar">
         {!collapsed && (
-          <div className="px-3 py-2">
-             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Main Menu</span>
-          </div>
+           <div className="px-3 py-3 mb-1">
+              <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">Main Menu</span>
+           </div>
         )}
         
         {menuItems.map((item) => (
@@ -156,8 +150,8 @@ export default function SaaSSidebar() {
       </nav>
 
       {/* FOOTER & USER */}
-      <div className="p-3 mt-auto border-t border-gray-100">
-        <div className="space-y-1 mb-4">
+      <div className="p-4 mt-auto border-t border-slate-100 bg-slate-50/50">
+        <div className="space-y-1.5 mb-6">
           {bottomItems.map((item) => (
             <SidebarItem 
               key={item.path}
@@ -168,7 +162,7 @@ export default function SaaSSidebar() {
             />
           ))}
           <SidebarItem 
-            icon={<LogOut className="text-gray-400 group-hover:text-red-600" />}
+            icon={<LogOut className="text-slate-400 group-hover:text-rose-600" />}
             label="Logout"
             path="/logout"
             active={false}
@@ -180,22 +174,23 @@ export default function SaaSSidebar() {
         {/* User Card */}
         <div 
           onClick={() => router.push('/profile')}
-          className={`p-2 rounded-lg border border-gray-100 flex items-center ${collapsed ? 'justify-center' : 'gap-3'} group cursor-pointer hover:bg-gray-50 transition-all duration-200`}
+          className={`p-3 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center ${collapsed ? 'justify-center p-2' : 'gap-3 mx-1'} group cursor-pointer hover:border-blue-200 hover:shadow-soft transition-all duration-300 relative overflow-hidden`}
         >
-          <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-100">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 via-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 bg-slate-100 border-2 border-slate-50 group-hover:border-blue-100 transition-colors z-10">
             <Image 
               src={user?.avatar || user?.image || "https://ui-avatars.com/api/?name=" + (user?.name || "User")} 
               alt="Avatar" 
               fill 
               className="object-cover"
             />
-            <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border-2 border-white rounded-full" />
+            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
           </div>
           
           {!collapsed && (
-            <div className="flex-1 min-w-0 text-left">
-               <p className="text-[11px] font-bold text-slate-900 truncate tracking-tight">{user?.name || 'Aman Sharma'}</p>
-               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{user?.role || 'User'}</p>
+            <div className="flex-1 min-w-0 text-left z-10">
+               <p className="text-[13px] font-extrabold text-slate-900 truncate tracking-tight group-hover:text-blue-700 transition-colors">{user?.name || 'Aman Sharma'}</p>
+               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{user?.role || 'User'}</p>
             </div>
           )}
         </div>

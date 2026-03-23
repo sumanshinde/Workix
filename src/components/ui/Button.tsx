@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
+import { twMerge } from 'tailwind-merge';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
@@ -29,32 +30,32 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ...props 
   }, ref) => {
     
-    const baseStyles = "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60 disabled:pointer-events-none";
+    const baseStyles = "inline-flex items-center justify-center font-bold transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/15 disabled:opacity-60 disabled:pointer-events-none disabled:hover:scale-100 disabled:active:scale-100";
     
     const variants: Record<ButtonVariant, string> = {
-      primary: "bg-[#2563eb] text-white hover:bg-[#1d4ed8]",
-      secondary: "bg-white border border-[#e5e7eb] text-[#111827] hover:bg-gray-50",
-      outline: "border border-[#e5e7eb] bg-white text-[#4b5563] hover:bg-gray-50 hover:text-[#111827]",
-      ghost: "bg-transparent text-[#6b7280] hover:bg-gray-50 hover:text-[#111827]",
-      danger: "bg-[#ef4444] text-white hover:bg-[#dc2626]",
+      primary: "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/25 border-none",
+      secondary: "bg-white/90 backdrop-blur-lg border border-slate-200 text-slate-900 hover:bg-slate-50 hover:scale-105 active:scale-95 shadow-sm shadow-black/5",
+      outline: "border border-slate-200 bg-transparent text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm hover:scale-105 active:scale-95",
+      ghost: "bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900 active:scale-95",
+      danger: "bg-gradient-to-r from-red-500 to-rose-600 text-white hover:scale-105 active:scale-95 shadow-lg shadow-red-500/25 border-none",
     };
 
     const sizes: Record<ButtonSize, string> = {
-      sm: "h-8 px-3 text-xs rounded-lg gap-1.5",
-      md: "h-10 px-4 text-sm rounded-lg gap-3",
-      lg: "h-11 px-5 text-sm rounded-lg gap-3",
-      icon: "h-10 w-10 p-0 rounded-lg",
+      sm: "h-9 px-4 text-xs rounded-xl gap-2",
+      md: "h-12 px-6 text-[15px] rounded-xl gap-2",
+      lg: "h-14 px-8 text-base rounded-2xl gap-3",
+      icon: "h-12 w-12 p-0 rounded-xl",
     };
 
     return (
       <button
         ref={ref}
-        className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+        className={twMerge(baseStyles, variants[variant], sizes[size], className)}
         disabled={disabled || isLoading}
         {...props}
       >
         {isLoading ? (
-          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
         ) : (
           <>
             {leftIcon && <span className="shrink-0">{leftIcon}</span>}

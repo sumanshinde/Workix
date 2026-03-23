@@ -17,7 +17,7 @@ export const errorHandler = (err: AppError, req: Request, res: Response, next: N
 
   // Log to Analytics
   try {
-    const { trackEvent } = require('../services/analyticsService');
+    const { trackEvent } = require('../services/AnalyticsService');
     const userId = (req as any).user?.id || 'anonymous';
     trackEvent('api_error', 'system', userId, {
       message: err.message,

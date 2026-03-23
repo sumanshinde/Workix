@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import Proposal from '../models/Proposal';
 import Job from '../models/Job';
+import User from '../models/User';
+import aiService from '../services/aiService';
+import { LeadLockService } from '../services/leadLockService';
 
 // ── Submit proposal ─────────────────────────────────────────────────────────
 export const submitProposal = async (req: Request, res: Response) => {
@@ -14,11 +17,35 @@ export const submitProposal = async (req: Request, res: Response) => {
     const job = await Job.findById(jobId);
     if (!job || job.status !== 'open') return res.status(400).json({ message: 'Job not available' });
 
-    const proposal = new Proposal({ jobId, freelancerId, coverLetter, bidAmount, deliveryDays });
+    // ── Lead Lock Credit Check ──
+    const user = await User.findById(freelancerId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    // Pro members pay 0 credits per bid (Lead Lock benefit)
+    const creditCost = user.subscriptionStatus === 'pro' ? 0 : 2; 
+    
+    if (user.availableCredits < creditCost) {
+      return res.status(403).json({ message: 'Insufficient bidding credits. Upgrade to BharatGig Pro.' });
+    }
+
+    // Deduct credits
+    if (creditCost > 0) {
+      await LeadLockService.deductCredits(freelancerId, creditCost);
+    }
+
+    const proposal = new Proposal({ 
+      jobId, 
+      freelancerId, 
+      coverLetter, 
+      bidAmount, 
+      deliveryDays,
+      creditCost 
+    });
+    
     await proposal.save();
     res.status(201).json(proposal);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Server error', error: err });
   }
 };
 
@@ -60,5 +87,19 @@ export const updateProposalStatus = async (req: Request, res: Response) => {
     res.json(proposal);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err });
+  }
+};
+
+// ── AI: Generate Proposal ───────────────────────────────────────────────────
+export const generateProposalAI = async (req: Request, res: Response) => {
+  try {
+    const { jobId, freelancerProfile } = req.body;
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+    
+    const proposal = await aiService.generateProposal(job.description, freelancerProfile || 'Expert freelancer');
+    res.json({ proposal });
+  } catch (err) {
+    res.status(500).json({ message: 'AI generation failed', error: err });
   }
 };
