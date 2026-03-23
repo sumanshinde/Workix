@@ -38,8 +38,9 @@ import dashboardRoutes from './routes/dashboard';
 import leadRoutes from './routes/leads';
 import shortlistRoutes from './routes/shortlists';
 import onboardingRoutes from './routes/onboarding';
-import analyticsRoutes from './routes/analytics';
 import experimentRoutes from './routes/experiments';
+import adsRoutes from './routes/ads';
+import appsRoutes from './routes/apps';
 
 import { handleStripeWebhook, handleRazorpayWebhook } from './controllers/webhooks';
 
@@ -118,8 +119,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/shortlists', shortlistRoutes);
 app.use('/api/onboarding', onboardingRoutes);
-app.use('/api/admin/analytics', analyticsRoutes);
 app.use('/api/experiments', experimentRoutes);
+app.use('/api/ads', adsRoutes);
+app.use('/api/apps', appsRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'BharatGig API Cluster Operational', status: 'Healthy' });

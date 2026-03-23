@@ -34,15 +34,14 @@ const userSchema = new mongoose.Schema({
   
   // Lead Lock & Credits
   availableCredits: { type: Number, default: 10 },
+  coins: { type: Number, default: 0 },
   subscriptionStatus: { type: String, enum: ['free', 'pro', 'enterprise'], default: 'free' },
   
-  // AI Matching Intelligence
-  trustScore: { type: Number, default: 75 }, // Default to 75% for new users
-  avgResponseTime: { type: Number, default: 60 }, // in minutes
-  completedJobs: { type: Number, default: 0 },
-  lastActive: { type: Date, default: Date.now },
-  hourlyRate: { type: Number, default: 500 },
-  
+  // Geolocation
+  latitude: { type: Number },
+  longitude: { type: Number },
+  locationName: { type: String },
+
   // Security & Fraud Control
   riskScore: { type: Number, default: 0 },
   isFlagged: { type: Boolean, default: false },

@@ -14,7 +14,10 @@ import {
   PieChart,
   FileText,
   Users,
-  Percent
+  Percent,
+  MapPin,
+  Zap,
+  Rocket
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -88,8 +91,9 @@ export default function SaaSSidebar() {
   }, [session]);
 
   const menuItems = [
-    { icon: <LayoutDashboard />, label: 'Dashboard', path: '/dashboard' },
     { icon: <Briefcase />, label: 'Marketplace', path: '/marketplace' },
+    { icon: <Rocket />, label: 'Solution Forge', path: '/marketplace/apps' },
+    { icon: <MapPin />, label: 'Nearby Radar', path: '/nearby' },
     { icon: <FileText />, label: 'Contracts', path: '/dashboard/contracts' },
     { icon: <MessageSquare />, label: 'Messages', path: '/messages', badge: '2' },
     { icon: <Wallet />, label: 'Payments', path: '/dashboard/withdraw' },
@@ -187,12 +191,16 @@ export default function SaaSSidebar() {
             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
           </div>
           
-          {!collapsed && (
             <div className="flex-1 min-w-0 text-left z-10">
-               <p className="text-[13px] font-extrabold text-slate-900 truncate tracking-tight group-hover:text-blue-700 transition-colors">{user?.name || 'Aman Sharma'}</p>
+               <div className="flex items-center justify-between gap-2">
+                  <p className="text-[13px] font-extrabold text-slate-900 truncate tracking-tight group-hover:text-blue-700 transition-colors">{user?.name || 'Aman Sharma'}</p>
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 rounded-lg border border-amber-100/50 shadow-sm shrink-0">
+                     <Zap size={10} className="text-amber-500 fill-amber-500" />
+                     <span className="text-[9px] font-black text-amber-700">{user?.coins || 0}</span>
+                  </div>
+               </div>
                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{user?.role || 'User'}</p>
             </div>
-          )}
         </div>
       </div>
     </aside>

@@ -1,0 +1,2 @@
+﻿src/app/ready-apps/page.tsx(7,20): error TS2307: Cannot find module '../../components/layout/Navbar' or its corresponding type declarations.
+src/app/ready-apps/page.tsx(8,20): error TS2307: Cannot find module '../../components/layout/Footer' or its corresponding type declarations.

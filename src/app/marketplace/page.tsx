@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { BRANDING } from '@/lib/config';
 import { MarketplaceJobCard } from '@/components/marketplace/MarketplaceJobCard';
 import { jobsAPI } from '@/services/api';
+import { FeaturedAdBanner, AdsSidebar } from '@/components/AdsSection';
 
 const CATEGORIES = [
   'All Categories', 'Software Development', 'Web Development', 'Mobile Apps', 
@@ -234,9 +235,11 @@ export default function MarketplacePage() {
                    </div>
 
                    {/* Reset */}
-                   <button onClick={handleReset} className="w-full h-12 border-2 border-slate-200 rounded-xl text-[13px] font-extrabold text-slate-500 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 transition-all flex items-center justify-center gap-3 uppercase tracking-widest group">
+                   <button onClick={handleReset} className="w-full h-12 border-2 border-slate-200 rounded-xl text-[13px] font-extrabold text-slate-500 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 transition-all flex items-center justify-center gap-3 uppercase tracking-widest group mb-10">
                      <FilterX size={16} className="group-hover:text-rose-500 transition-colors" /> Clear Restrictions
                    </button>
+
+                   <AdsSidebar />
 
                </div>
             </aside>
@@ -263,6 +266,8 @@ export default function MarketplacePage() {
                     <Filter size={16} /> Filters
                   </button>
                </div>
+
+               <FeaturedAdBanner />
 
                {/* Cards */}
                <section className="space-y-6">

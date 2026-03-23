@@ -37,6 +37,19 @@ const CATEGORIES = [
   'Video Editing', 'Cloud / DevOps', 'Cybersecurity', 'Accounting / Finance',
 ];
 
+const COIN_COSTS: any = {
+  'UI/UX Design': 35,
+  'Graphic Design': 35,
+  'Web Development': 55,
+  'Mobile Apps': 55,
+  'AI / Machine Learning': 55,
+  'Data Science': 55,
+  'SEO / Marketing': 45,
+  'Content Writing': 45,
+  'Cloud / DevOps': 55,
+  'General': 20
+};
+
 const POPULAR_SKILLS = [
   'React', 'Node.js', 'TypeScript', 'Python', 'Figma', 'Next.js',
   'MongoDB', 'PostgreSQL', 'AWS', 'Flutter', 'SEO', 'Photoshop',
@@ -247,7 +260,15 @@ export default function PostJobPage() {
                             : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
                         }`}
                       >
-                        {cat}
+                        <div className="flex justify-between items-center mb-1">
+                           <span className={form.category === cat ? 'text-blue-700' : 'text-slate-600'}>{cat}</span>
+                           {COIN_COSTS[cat] && (
+                             <div className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 rounded-md border border-amber-100/50">
+                               <Zap size={10} className="text-amber-500 fill-amber-500" />
+                               <span className="text-[9px] font-black text-amber-700">{COIN_COSTS[cat]}</span>
+                             </div>
+                           )}
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -514,10 +535,24 @@ export default function PostJobPage() {
                           ))}
                         </div>
                       </div>
-                      <button onClick={() => setStep(4)} className="text-[12px] text-blue-600 hover:text-blue-800 font-extrabold uppercase tracking-widest shrink-0 ml-4">Edit</button>
+                     <button onClick={() => setStep(4)} className="text-[12px] text-blue-600 hover:text-blue-800 font-extrabold uppercase tracking-widest shrink-0 ml-4">Edit</button>
                     </div>
                   </div>
                 </div>
+
+                {COIN_COSTS[form.category] && (
+                  <div className="flex items-center justify-between p-6 bg-amber-50 rounded-3xl border border-amber-100 shadow-sm transition-all animate-in fade-in slide-in-from-bottom-2 mt-6">
+                     <div className="flex items-center gap-4 text-left">
+                        <div className="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                           <Zap size={24} fill="currentColor" />
+                        </div>
+                        <div>
+                           <p className="text-[11px] font-black text-amber-600 uppercase tracking-widest">Coin Authorization Required</p>
+                           <p className="text-[14px] font-bold text-amber-900">This mission requires <span className="text-lg font-black">{COIN_COSTS[form.category]} Coins</span> to deploy.</p>
+                        </div>
+                     </div>
+                  </div>
+                )}
 
                 <div className="flex items-start gap-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100/50 shadow-inner">
                   <ShieldCheck size={24} className="text-blue-600 shrink-0 mt-0.5" />

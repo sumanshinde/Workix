@@ -51,8 +51,54 @@ model User {
   gigs         Gig[]
   job_posts    JobPost[]
   proposals    Proposal[]
-  subscriptionStatus String   @default("free") // "free", "pro"
+  coins              Int        @default(0)
+  latitude           Float?
+  longitude          Float?
+  locationName       String?
+  ads               Ad[]
+  ready_apps        ReadyMadeApp[]
+  coin_transactions CoinTransaction[]
   subscriptions      Subscription[]
+}
+
+model Ad {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  image       String?
+  adType      String   @default("PROMOTION") // PROMOTION, SERVICE
+  target      String   @default("BOTH")      // USER, FREELANCER, BOTH
+  location    String?
+  latitude    Float?
+  longitude   Float?
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ReadyMadeApp {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  demoUrl     String?
+  buyPrice    Float
+  images      String[]
+  features    Json
+  updatedAt   DateTime @updatedAt
+  developerId String
+  developer   User     @relation(fields: [developerId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model CoinTransaction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int
+  type      String   // CREDIT, DEBIT
+  reason    String
+  createdAt DateTime @default(now())
 }
 
 model Subscription {

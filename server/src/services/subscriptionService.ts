@@ -2,6 +2,7 @@ import Razorpay from 'razorpay';
 import Subscription from '../models/Subscription';
 import User from '../models/User';
 import crypto from 'crypto';
+import { CoinService } from './coinService';
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
@@ -83,6 +84,11 @@ export const SubscriptionService = {
     // Update User Profile Status
     const userStatus = (subStatus === 'active') ? 'pro' : 'free';
     const userBadge = (subStatus === 'active') ? 'BharatGig Pro' : '';
+
+    if (subStatus === 'active') {
+       const planPrice = 299; // Hardcoded default for current BharatGig Pro
+       await CoinService.addCoins(userId, Math.floor(planPrice * 1.5), 'PLAN_PURCHASE_AWARD');
+    }
 
     await User.findByIdAndUpdate(userId, {
       subscriptionStatus: userStatus,

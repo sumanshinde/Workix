@@ -1,12 +1,22 @@
 import { Request, Response } from 'express';
 import Job from '../models/Job';
 import aiService from '../services/aiService';
+import { CoinService } from '../services/coinService';
+import User from '../models/User';
 
 // ── Create job ──────────────────────────────────────────────────────────────
 export const createJob = async (req: Request, res: Response) => {
   try {
     const { title, description, category, budget, budgetType, skills, experienceLevel, deadline, scope } = req.body;
     const clientId = (req as any).user?.id;
+    
+    // ── Coin Logic: Deduct based on category ──────
+    const costs: any = CoinService.getCosts();
+    const cost = costs[category?.toUpperCase()] || 0;
+    if (cost > 0) {
+      await CoinService.deductCoins(clientId, cost, `Job Post Cost: ${category}`);
+    }
+
     const job = new Job({ title, description, category, budget, budgetType, skills, experienceLevel, deadline, scope, clientId, status: 'open' });
     const savedJob = await job.save();
 
