@@ -132,7 +132,7 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/shortlists', shortlistRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/experiments', experimentRoutes);
-app.use('/api/ads', adsRoutes);
+app.use('/api/campaigns', adsRoutes);
 app.use('/api/apps', appsRoutes);
 app.use('/api/requirements', requirementRoutes);
 app.use('/api/platform', platformRoutes);

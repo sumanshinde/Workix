@@ -331,26 +331,26 @@ export const requirementsAPI = {
     request('/requirements/respond', { method: 'POST', body: JSON.stringify({ postId }) }),
 };
 
-// ── Enhanced Ads (GigIndia Marketplace) ──────────────────────────────────────
+// ── Enhanced Ads (GigIndia Marketplace) renamed to campaigns to bypass adblockers
 export const adsAPI = {
   getAll:          (params?: { target?: string; category?: string }) => {
     const q = new URLSearchParams(params as any).toString();
-    return request(`/ads${q ? '?' + q : ''}`);
+    return request(`/campaigns${q ? '?' + q : ''}`);
   },
-  getMy:           () => request('/ads/my'),
+  getMy:           () => request('/campaigns/my'),
   calculatePrice:  (data: { adType: string; durationDays: number }) =>
-    request('/ads/calculate-price', { method: 'POST', body: JSON.stringify(data) }),
+    request('/campaigns/calculate-price', { method: 'POST', body: JSON.stringify(data) }),
   create:          (data: any) =>
-    request('/ads', { method: 'POST', body: JSON.stringify(data) }),
+    request('/campaigns', { method: 'POST', body: JSON.stringify(data) }),
   verifyPayment:   (data: { adId: string; razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
-    request('/ads/verify-payment', { method: 'POST', body: JSON.stringify(data) }),
+    request('/campaigns/verify-payment', { method: 'POST', body: JSON.stringify(data) }),
   trackClick:      (adId: string) =>
-    request(`/ads/${adId}/click`, { method: 'POST' }),
+    request(`/campaigns/${adId}/click`, { method: 'POST' }),
   trackView:       (adId: string) =>
-    request(`/ads/${adId}/view`, { method: 'POST' }),
+    request(`/campaigns/${adId}/view`, { method: 'POST' }),
   getNearby:       (params: { lat?: number; lng?: number; city?: string; pincode?: string }) => {
     const q = new URLSearchParams(params as any).toString();
-    return request(`/ads/nearby?${q}`);
+    return request(`/campaigns/nearby?${q}`);
   },
 };
 
