@@ -38,9 +38,20 @@ const userSchema = new mongoose.Schema({
   subscriptionStatus: { type: String, enum: ['free', 'pro', 'enterprise'], default: 'free' },
   
   // Geolocation
+  location: {
+    lat: Number,
+    lng: Number,
+    address: String
+  },
   latitude: { type: Number },
   longitude: { type: Number },
   locationName: { type: String },
+  city: { type: String, default: '' },
+  pincode: { type: String, default: '' },
+
+  // Account status (admin control)
+  isBlocked: { type: Boolean, default: false },
+  blockReason: { type: String, default: '' },
 
   // Security & Fraud Control
   riskScore: { type: Number, default: 0 },

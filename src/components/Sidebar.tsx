@@ -2,22 +2,12 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  MessageSquare, 
-  Wallet, 
-  Settings, 
-  ChevronRight, 
-  LogOut, 
-  ShieldCheck,
-  PieChart,
-  FileText,
-  Users,
-  Percent,
-  MapPin,
-  Zap,
-  Rocket
+import {
+  LayoutDashboard, CreditCard, Sparkles, Bell, Settings,
+  ChevronRight, LogOut, Wallet, Users, Briefcase,
+  MessageSquare, PieChart, Zap, MapPin, Megaphone,
+  PlusCircle, Rocket, FileText, ChevronLeft, Building2,
+  Clock, QrCode, Receipt,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -25,45 +15,84 @@ import { BRANDING } from '@/lib/config';
 import { authAPI } from '@/services/api';
 import { signOut, useSession } from 'next-auth/react';
 
-interface SidebarItemProps {
-  icon: React.ReactNode;
-  label: string;
-  path: string;
-  active: boolean;
-  collapsed: boolean;
-  onClick: () => void;
-  badge?: string;
-}
+// ── Menu Structure ───────────────────────────────────────────────────
+interface MenuItem { icon: React.ReactNode; label: string; path: string; badge?: string }
+interface MenuSection { title: string; items: MenuItem[] }
 
-const SidebarItem = ({ icon, label, path, active, collapsed, onClick, badge }: SidebarItemProps) => {
-  return (
-    <div
-      onClick={onClick}
-      className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-300 border ${
-        active 
-          ? 'bg-blue-50/80 text-blue-600 border-blue-100 shadow-sm shadow-blue-500/5' 
-          : 'text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-900 shadow-none'
-      }`}
-    >
-      <div className={`flex items-center justify-center transition-colors ${active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600'}`}>
-        {React.cloneElement(icon as React.ReactElement, { size: 20, strokeWidth: active ? 2.5 : 2 })}
-      </div>
-      
-      {!collapsed && (
-        <span className={`text-[15px] font-medium whitespace-nowrap transition-all ${active ? 'font-extrabold text-blue-900' : 'group-hover:translate-x-0.5'}`}>
+const MENU_SECTIONS: MenuSection[] = [
+  {
+    title: 'Core',
+    items: [
+      { icon: <LayoutDashboard size={18} />, label: 'Dashboard', path: '/dashboard' },
+      { icon: <MessageSquare size={18} />, label: 'Messages', path: '/messages', badge: '2' },
+      { icon: <Briefcase size={18} />, label: 'Marketplace', path: '/marketplace' },
+    ],
+  },
+  {
+    title: 'Money',
+    items: [
+      { icon: <CreditCard size={18} />, label: 'Receive Payments', path: '/dashboard/payments' },
+      { icon: <Wallet size={18} />, label: 'Withdrawals', path: '/dashboard/withdraw' },
+      { icon: <Sparkles size={18} />, label: 'Subscriptions', path: '/dashboard/subscriptions' },
+    ],
+  },
+  {
+    title: 'Manage',
+    items: [
+      { icon: <FileText size={18} />, label: 'Contracts', path: '/dashboard/contracts' },
+      { icon: <Clock size={18} />, label: 'Reminders', path: '/dashboard/reminders' },
+      { icon: <Users size={18} />, label: 'Referrals', path: '/dashboard/referrals' },
+    ],
+  },
+  {
+    title: 'Grow',
+    items: [
+      { icon: <PlusCircle size={18} />, label: 'Post Requirement', path: '/post-requirement' },
+      { icon: <Megaphone size={18} />, label: 'Ads Dashboard', path: '/ads/dashboard' },
+      { icon: <MapPin size={18} />, label: 'Nearby', path: '/nearby' },
+    ],
+  },
+];
+
+// ── Sidebar Item ─────────────────────────────────────────────────────
+const SidebarItem = ({ icon, label, path, active, collapsed, onClick, badge }: MenuItem & { active: boolean; collapsed: boolean; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className={`
+      w-full flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer
+      transition-all duration-200 text-left group relative
+      ${active
+        ? 'bg-blue-50 text-blue-700 shadow-sm shadow-blue-500/5'
+        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+      }
+    `}
+  >
+    {active && (
+      <motion.div
+        layoutId="sidebarActive"
+        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-blue-600"
+        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+      />
+    )}
+    <span className={`shrink-0 ${active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600'} transition-colors`}>
+      {icon}
+    </span>
+    {!collapsed && (
+      <>
+        <span className={`text-[13px] font-semibold tracking-tight flex-1 truncate ${active ? 'font-bold text-blue-900' : ''}`}>
           {label}
         </span>
-      )}
+        {badge && (
+          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+            {badge}
+          </span>
+        )}
+      </>
+    )}
+  </button>
+);
 
-      {badge && !collapsed && (
-        <span className="ml-auto inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-blue-100 text-blue-700 shadow-sm border border-blue-200">
-          {badge}
-        </span>
-      )}
-    </div>
-  );
-};
-
+// ═══════════════════════════════════════════════════════════════════════
 export default function SaaSSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
@@ -77,8 +106,7 @@ export default function SaaSSidebar() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       router.push('/login');
-    } catch (err) {
-      console.error('Logout failed', err);
+    } catch {
       router.push('/login');
     }
   };
@@ -90,119 +118,109 @@ export default function SaaSSidebar() {
     else if (session?.user) setUser(session.user);
   }, [session]);
 
-  const menuItems = [
-    { icon: <Briefcase />, label: 'Marketplace', path: '/marketplace' },
-    { icon: <Rocket />, label: 'Solution Forge', path: '/marketplace/apps' },
-    { icon: <MapPin />, label: 'Nearby Radar', path: '/nearby' },
-    { icon: <FileText />, label: 'Contracts', path: '/dashboard/contracts' },
-    { icon: <MessageSquare />, label: 'Messages', path: '/messages', badge: '2' },
-    { icon: <Wallet />, label: 'Payments', path: '/dashboard/withdraw' },
-    { icon: <PieChart />, label: 'Analytics', path: '/admin/analytics' },
-    { icon: <ShieldCheck />, label: 'Compliance', path: '/admin/dashboard' },
-    { icon: <Users />, label: 'Referrals', path: '/referrals' },
-    { icon: <Percent />, label: 'Commission', path: '/admin/fees' },
-  ];
-
-  const bottomItems = [
-    { icon: <Settings />, label: 'Settings', path: '/dashboard/settings' },
-  ];
+  const isActive = (path: string) => pathname === path || (path !== '/dashboard' && pathname.startsWith(path + '/'));
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-white/70 backdrop-blur-xl border-r border-slate-200 flex flex-col z-[100] transition-all duration-300 shadow-soft ${collapsed ? 'w-[80px]' : 'w-[260px]'}`}
+      className={`fixed left-0 top-0 h-screen bg-white border-r border-slate-200/60 flex flex-col z-[100] transition-all duration-300 ${collapsed ? 'w-[72px]' : 'w-[260px]'}`}
     >
-      {/* BRANDING HEADER */}
-      <div className={`h-[88px] flex items-center ${collapsed ? 'justify-center' : 'px-6'} relative border-b border-slate-100`}>
+      {/* Logo */}
+      <div className={`h-16 flex items-center ${collapsed ? 'justify-center' : 'px-5'} border-b border-slate-100 shrink-0`}>
         <div className="flex items-center gap-3 cursor-pointer group" onClick={() => router.push('/')}>
-          <div className="w-10 h-10-xl bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-extrabold text-[15px] shadow-sm shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            {BRANDING.shortName}
+          <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+            <Zap size={16} className="text-white fill-white" />
           </div>
           {!collapsed && (
-            <span className="font-extrabold text-xl text-slate-900 tracking-tight">
-              {BRANDING.name}
-            </span>
+            <div>
+              <span className="font-bold text-base tracking-tight text-slate-900">{BRANDING.name}</span>
+              <span className="block text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">Pro Dashboard</span>
+            </div>
           )}
         </div>
-        
-        <button 
-          onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-7 h-7 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all z-50 shadow-sm"
-        >
-          <div className={`transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`}>
-            <ChevronRight size={14} />
-          </div>
-        </button>
       </div>
 
-      {/* NAVIGATION */}
-      <nav className="flex-1 px-4 mt-6 space-y-1.5 overflow-y-auto no-scrollbar">
-        {!collapsed && (
-           <div className="px-3 py-3 mb-1">
-              <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">Main Menu</span>
-           </div>
-        )}
-        
-        {menuItems.map((item) => (
-          <SidebarItem 
-            key={item.path}
-            {...item}
-            active={pathname === item.path}
-            collapsed={collapsed}
-            onClick={() => router.push(item.path)}
-          />
+      {/* Menu */}
+      <nav className="flex-1 py-4 px-3 space-y-5 overflow-y-auto scrollbar-thin">
+        {MENU_SECTIONS.map(section => (
+          <div key={section.title}>
+            {!collapsed && (
+              <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-300">
+                {section.title}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {section.items.map(item => (
+                <SidebarItem
+                  key={item.path}
+                  {...item}
+                  active={isActive(item.path)}
+                  collapsed={collapsed}
+                  onClick={() => router.push(item.path)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
-      {/* FOOTER & USER */}
-      <div className="p-4 mt-auto border-t border-slate-100 bg-slate-50/50">
-        <div className="space-y-1.5 mb-6">
-          {bottomItems.map((item) => (
-            <SidebarItem 
-              key={item.path}
-              {...item}
-              active={pathname === item.path}
-              collapsed={collapsed}
-              onClick={() => router.push(item.path)}
-            />
-          ))}
-          <SidebarItem 
-            icon={<LogOut className="text-slate-400 group-hover:text-rose-600" />}
-            label="Logout"
-            path="/logout"
-            active={false}
-            collapsed={collapsed}
-            onClick={handleLogout}
-          />
-        </div>
-
-        {/* User Card */}
-        <div 
-          onClick={() => router.push('/profile')}
-          className={`p-3 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center ${collapsed ? 'justify-center p-2' : 'gap-3 mx-1'} group cursor-pointer hover:border-blue-200 hover:shadow-soft transition-all duration-300 relative overflow-hidden`}
+      {/* Footer */}
+      <div className="p-3 border-t border-slate-100 space-y-1 shrink-0">
+        <SidebarItem
+          icon={<Building2 size={18} />}
+          label="Business Settings"
+          path="/dashboard/business"
+          active={isActive('/dashboard/business')}
+          collapsed={collapsed}
+          onClick={() => router.push('/dashboard/business')}
+        />
+        <SidebarItem
+          icon={<Settings size={18} />}
+          label="Settings"
+          path="/dashboard/settings"
+          active={isActive('/dashboard/settings')}
+          collapsed={collapsed}
+          onClick={() => router.push('/dashboard/settings')}
+        />
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all text-left group"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 via-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 bg-slate-100 border-2 border-slate-50 group-hover:border-blue-100 transition-colors z-10">
-            <Image 
-              src={user?.avatar || user?.image || "https://ui-avatars.com/api/?name=" + (user?.name || "User")} 
-              alt="Avatar" 
-              fill 
+          <LogOut size={18} className="group-hover:translate-x-0.5 transition-transform" />
+          {!collapsed && <span className="text-[13px] font-semibold">Logout</span>}
+        </button>
+      </div>
+
+      {/* User Card */}
+      <div className="px-3 pb-3">
+        <div
+          onClick={() => router.push('/profile')}
+          className={`p-2.5 rounded-xl border border-slate-100 bg-slate-50 flex items-center ${collapsed ? 'justify-center' : 'gap-3'} cursor-pointer hover:border-blue-200 hover:bg-white transition-all group`}
+        >
+          <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 bg-slate-200">
+            <Image
+              src={user?.avatar || user?.image || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=3B82F6&color=fff`}
+              alt="Avatar"
+              fill
               className="object-cover"
             />
-            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
+            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
           </div>
-          
-            <div className="flex-1 min-w-0 text-left z-10">
-               <div className="flex items-center justify-between gap-2">
-                  <p className="text-[13px] font-extrabold text-slate-900 truncate tracking-tight group-hover:text-blue-700 transition-colors">{user?.name || 'Aman Sharma'}</p>
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 rounded-lg border border-amber-100/50 shadow-sm shrink-0">
-                     <Zap size={10} className="text-amber-500 fill-amber-500" />
-                     <span className="text-[9px] font-black text-amber-700">{user?.coins || 0}</span>
-                  </div>
-               </div>
-               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{user?.role || 'User'}</p>
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-bold text-slate-900 truncate">{user?.name || 'User'}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{user?.role || 'Member'}</p>
             </div>
+          )}
         </div>
       </div>
+
+      {/* Collapse Toggle */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="absolute -right-3 top-20 w-6 h-6 bg-white border-2 border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-all z-50 shadow-md"
+      >
+        <ChevronLeft size={12} className={`transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+      </button>
     </aside>
   );
 }

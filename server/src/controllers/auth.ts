@@ -39,12 +39,14 @@ export const googleLogin = async (req: Request, res: Response) => {
     let user: any = await User.findOne({ email });
 
     if (!user) {
+      const personalCode = `BHARAT-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
       user = new User({
         name,
         email,
         googleId: providerId,
         role: 'freelancer', // Default role for social login
         avatar: image,
+        referralCode: personalCode,
       });
       await user.save();
     } else {

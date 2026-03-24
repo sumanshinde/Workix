@@ -1,267 +1,387 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Users, Briefcase, DollarSign, TrendingUp, 
-  ArrowUpRight, ArrowDownRight, Clock, 
-  CheckCircle2, AlertCircle, FileText,
-  Activity, ShieldCheck, Zap, Globe, Menu, Search,
-  Terminal, Shield, MessageSquare
+import {
+  Users, Briefcase, DollarSign, TrendingUp,
+  ArrowUpRight, ArrowDownRight, CheckCircle2,
+  AlertCircle, Activity, ShieldCheck, MessageSquare,
+  Zap, Target, UserCheck, Clock, BarChart3,
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, AreaChart, Area 
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell
 } from 'recharts';
-import { BRANDING } from '@/lib/config';
-
 import { adminAPI } from '@/services/api';
 import { io } from 'socket.io-client';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
 
-const data = [
-  { name: 'Mon', revenue: 4200, users: 12 },
-  { name: 'Tue', revenue: 5800, users: 18 },
-  { name: 'Wed', revenue: 3900, users: 15 },
-  { name: 'Thu', revenue: 7200, users: 24 },
-  { name: 'Fri', revenue: 8100, users: 32 },
-  { name: 'Sat', revenue: 4500, users: 10 },
-  { name: 'Sun', revenue: 3200, users: 8 },
+// ── Mock data ────────────────────────────────────────────────────────────────
+const revenueData = [
+  { name: 'Jan', revenue: 24000, users: 120 },
+  { name: 'Feb', revenue: 36000, users: 180 },
+  { name: 'Mar', revenue: 31000, users: 160 },
+  { name: 'Apr', revenue: 52000, users: 240 },
+  { name: 'May', revenue: 48000, users: 220 },
+  { name: 'Jun', revenue: 61000, users: 310 },
+  { name: 'Jul', revenue: 72000, users: 380 },
 ];
 
-const StatCard = ({ title, value, change, icon, trend }: any) => {
+const growthData = [
+  { name: 'W1', freelancers: 42, clients: 28 },
+  { name: 'W2', freelancers: 56, clients: 35 },
+  { name: 'W3', freelancers: 48, clients: 42 },
+  { name: 'W4', freelancers: 72, clients: 51 },
+];
+
+const funnelData = [
+  { name: 'Visitors', value: 10000, color: '#3B82F6' },
+  { name: 'Signups', value: 4200, color: '#6366F1' },
+  { name: 'Jobs Posted', value: 1800, color: '#8B5CF6' },
+  { name: 'Hired', value: 620, color: '#10B981' },
+];
+
+// ── Stat Card ────────────────────────────────────────────────────────────────
+const StatCard = ({ title, value, change, trend, icon, color, delay = 0 }: any) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.4 }}
+    className="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-lg hover:border-blue-100 transition-all duration-300 group"
+  >
+    <div className="flex items-start justify-between mb-4">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color} transition-transform group-hover:scale-110`}>
+        {icon}
+      </div>
+      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold ${
+        trend === 'up' ? 'bg-emerald-50 text-emerald-600' :
+        trend === 'down' ? 'bg-rose-50 text-rose-600' :
+        'bg-slate-50 text-slate-500'
+      }`}>
+        {trend === 'up' ? <ArrowUpRight size={12} /> : trend === 'down' ? <ArrowDownRight size={12} /> : null}
+        {change}
+      </div>
+    </div>
+    <div>
+      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">{title}</p>
+      <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">{value}</h3>
+    </div>
+  </motion.div>
+);
+
+// ── Custom Tooltip ───────────────────────────────────────────────────────────
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload) return null;
   return (
-    <div className="bg-white border border-gray-100 p-6 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all group">
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg group-hover:scale-105 transition-transform">
-          {React.cloneElement(icon, { size: 20 })}
-        </div>
-        <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold ${trend === 'up' ? 'bg-emerald-50 text-emerald-600' : trend === 'down' ? 'bg-rose-50 text-rose-600' : 'bg-gray-50 text-gray-600'}`}>
-          {change} {trend === 'up' ? <ArrowUpRight size={14} /> : trend === 'down' ? <ArrowDownRight size={14} /> : null}
-        </div>
-      </div>
-      <div className="space-y-1">
-        <p className="text-[#6b7280] text-xs font-bold uppercase tracking-wider">{title}</p>
-        <h3 className="text-2xl font-bold text-[#111827]">{value}</h3>
-      </div>
+    <div className="bg-white/95 backdrop-blur-xl border border-slate-200 rounded-xl px-4 py-3 shadow-xl">
+      <p className="text-xs font-bold text-slate-500 mb-1">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <p key={i} className="text-sm font-extrabold text-slate-900">
+          {p.name}: {typeof p.value === 'number' && p.name.toLowerCase().includes('revenue') ? `₹${p.value.toLocaleString()}` : p.value.toLocaleString()}
+        </p>
+      ))}
     </div>
   );
 };
 
+// ═════════════════════════════════════════════════════════════════════════════
 export default function AdminDashboard() {
-  const t = BRANDING.theme;
-  const [stats, setStats] = React.useState({
+  const [stats, setStats] = useState({
     liveUsers: 0,
     liveChats: 0,
     totalRevenue: 0,
     signups: 0,
-    flaggedUsers: 0
+    flaggedUsers: 0,
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchStats();
-    
     const socket = io(SOCKET_URL, { withCredentials: true });
-    
-    socket.on('new_activity', (act: any) => {
-      if (act && act.action === 'signup') {
-         setStats(s => ({...s, liveUsers: s.liveUsers + 1, signups: s.signups + 1}));
-      }
-      if (act && act.action === 'login') {
-         // simplified live logic
-      }
-      if (act && act.action === 'fraud_alert') {
-         setStats(s => ({...s, flaggedUsers: s.flaggedUsers + 1}));
-      }
-    });
-    
-    socket.on('receive_msg', () => {
-       setStats(s => ({...s, liveChats: s.liveChats + 1}));
-    });
 
-    return () => { socket.disconnect() };
+    socket.on('new_activity', (act: any) => {
+      if (act?.action === 'signup') setStats(s => ({ ...s, liveUsers: s.liveUsers + 1, signups: s.signups + 1 }));
+      if (act?.action === 'fraud_alert') setStats(s => ({ ...s, flaggedUsers: s.flaggedUsers + 1 }));
+    });
+    socket.on('receive_msg', () => setStats(s => ({ ...s, liveChats: s.liveChats + 1 })));
+    return () => { socket.disconnect(); };
   }, []);
 
   const fetchStats = async () => {
     try {
       const res = await adminAPI.getDashboardStats();
       if (res) setStats(res as any);
-    } catch(err) {
-      console.error(err);
-    }
+    } catch {}
   };
-  
+
   return (
-    <div className="max-w-[1400px] mx-auto space-y-8 pb-10 md:">
-      {/* 1. HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-gray-100">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-[#111827]">Super Admin Dashboard</h1>
-          <p className="text-[#6b7280] font-medium text-base">Real-time platform intelligence and fraud oversight.</p>
+    <div className="max-w-[1400px] mx-auto space-y-8 pb-10">
+
+      {/* ── Header ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Dashboard
+          </h1>
+          <p className="text-slate-500 font-medium text-sm mt-1">
+            Real-time platform intelligence and performance metrics
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-5 py-2.5 bg-white border border-gray-200 text-[#111827] font-bold rounded-lg hover:bg-gray-50 transition-all text-sm shadow-sm flex items-center gap-2">
-            <AlertCircle size={16} className={stats.flaggedUsers > 0 ? "text-red-500 animate-pulse" : "text-gray-400"} />
-            {stats.flaggedUsers} Flagged Users
-          </button>
+          {stats.flaggedUsers > 0 && (
+            <button className="px-4 py-2 bg-rose-50 border border-rose-200 text-rose-600 font-bold rounded-xl text-sm flex items-center gap-2 hover:bg-rose-100 transition-colors">
+              <AlertCircle size={16} className="animate-pulse" />
+              {stats.flaggedUsers} Flagged
+            </button>
+          )}
+          <div className="px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            Last 7 days
+          </div>
         </div>
+      </motion.div>
+
+      {/* ── KPI Grid ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
+        <StatCard
+          title="Total Users"
+          value={stats.signups > 0 ? stats.signups.toLocaleString() : '1,248'}
+          change="+12%"
+          trend="up"
+          icon={<Users size={18} className="text-blue-600" />}
+          color="bg-blue-50"
+          delay={0}
+        />
+        <StatCard
+          title="Active Users"
+          value={stats.liveUsers > 0 ? stats.liveUsers.toLocaleString() : '342'}
+          change="Real-time"
+          trend="neutral"
+          icon={<Activity size={18} className="text-indigo-600" />}
+          color="bg-indigo-50"
+          delay={0.05}
+        />
+        <StatCard
+          title="Total Revenue"
+          value={stats.totalRevenue > 0 ? `₹${stats.totalRevenue.toLocaleString()}` : '₹4.2L'}
+          change="+24%"
+          trend="up"
+          icon={<DollarSign size={18} className="text-emerald-600" />}
+          color="bg-emerald-50"
+          delay={0.1}
+        />
+        <StatCard
+          title="GMV"
+          value="₹42L"
+          change="+18%"
+          trend="up"
+          icon={<TrendingUp size={18} className="text-amber-600" />}
+          color="bg-amber-50"
+          delay={0.15}
+        />
+        <StatCard
+          title="Jobs Posted"
+          value="1,542"
+          change="+102 this wk"
+          trend="up"
+          icon={<Briefcase size={18} className="text-violet-600" />}
+          color="bg-violet-50"
+          delay={0.2}
+        />
+        <StatCard
+          title="Successful Hires"
+          value="620"
+          change="+8.2%"
+          trend="up"
+          icon={<UserCheck size={18} className="text-cyan-600" />}
+          color="bg-cyan-50"
+          delay={0.25}
+        />
       </div>
 
-      {/* 2. CORE PERFORMANCE GRID - TIGHT */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard 
-          title="Live Network Users" 
-          value={stats.liveUsers.toLocaleString()} 
-          change="Real-time" 
-          trend="neutral" 
-          icon={<Users />} 
-        />
-        <StatCard 
-          title="Live Chats Sent" 
-          value={stats.liveChats.toLocaleString()} 
-          change="Real-time" 
-          trend="neutral" 
-          icon={<MessageSquare className="text-blue-600" />} 
-        />
-        <StatCard 
-          title="Total Signups" 
-          value={stats.signups.toLocaleString()} 
-          change="Verified" 
-          trend="up" 
-          icon={<ShieldCheck />} 
-        />
-        <StatCard 
-          title="Total Gross Revenue" 
-          value={`₹${stats.totalRevenue.toLocaleString()}`} 
-          change="Settled" 
-          trend="up" 
-          icon={<DollarSign />} 
-        />
-      </div>
+      {/* ── Charts Row ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        {/* 3. REVENUE VELOCITY CHART - COMPACT */}
-        <div className="xl:col-span-8 bg-white border border-gray-100 p-8 rounded-xl space-y-8 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-[#111827] flex items-center gap-3">
-               <Activity size={20} className="text-blue-600" /> Revenue Growth
-            </h3>
-            <div className="flex gap-3">
-              <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold uppercase tracking-wider">Historical Analysis</span>
+        {/* Revenue Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="xl:col-span-8 bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg transition-shadow"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                <BarChart3 size={16} className="text-blue-600" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Revenue Growth</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-wider">Monthly</span>
             </div>
           </div>
-          <div className="h-[320px] w-full">
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
+              <AreaChart data={revenueData}>
                 <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                  <linearGradient id="revGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#94A3B8" 
-                  fontSize={9} 
-                  fontWeight={900}
-                  tickLine={false} 
-                  axisLine={false} 
-                  tick={{ dy: 8 }}
-                />
-                <YAxis 
-                  stroke="#94A3B8" 
-                  fontSize={9} 
-                  fontWeight={900}
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(value) => `₹${value}`}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #F1F5F9', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}
-                  itemStyle={{ color: '#0F172A', fontWeight: 900, textTransform: 'uppercase', fontSize: '9px' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#2563EB" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
-                />
+                <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94A3B8" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={2.5} fillOpacity={1} fill="url(#revGradient)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
-        {/* 4. VERIFICATION DECK - COMPACT */}
-        <div className="xl:col-span-4 h-full">
-          <div className="bg-white border border-gray-100 p-8 rounded-xl shadow-sm h-full overflow-hidden">
-            <h3 className="text-sm font-bold text-[#111827] mb-6">User Verifications</h3>
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-xl border border-gray-50 hover:bg-white hover:border-blue-200 transition-all cursor-pointer group">
-                  <div className="w-10 h-10-lg-400">
-                     U{i}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[#111827] font-bold text-sm">Identity Queue #{1000 + i}</p>
-                    <p className="text-[#6b7280] text-xs font-medium">Pending Verification</p>
-                  </div>
-                  <button className="p-2 text-emerald-600 bg-white border border-gray-100 rounded-lg hover:bg-emerald-50 transition-all"><CheckCircle2 size={16} /></button>
-                </div>
-              ))}
-              <button className="w-full py-4 text-center text-[#6b7280] text-xs font-bold hover:text-blue-600 transition-colors border-t border-gray-50 mt-4">View All Requests</button>
+        {/* Conversion Funnel */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="xl:col-span-4 bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg transition-shadow"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-violet-50 rounded-lg flex items-center justify-center">
+              <Target size={16} className="text-violet-600" />
             </div>
+            <h3 className="text-sm font-bold text-slate-900">Conversion Funnel</h3>
           </div>
-        </div>
+          <div className="space-y-4">
+            {funnelData.map((stage, i) => {
+              const maxVal = funnelData[0].value;
+              const pct = ((stage.value / maxVal) * 100).toFixed(0);
+              return (
+                <div key={stage.name} className="space-y-1.5">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-xs font-semibold text-slate-600">{stage.name}</span>
+                    <span className="text-xs font-bold text-slate-900">{stage.value.toLocaleString()}</span>
+                  </div>
+                  <div className="h-2.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ delay: 0.4 + i * 0.1, duration: 0.6 }}
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: stage.color }}
+                    />
+                  </div>
+                  {i < funnelData.length - 1 && (
+                    <p className="text-[10px] font-semibold text-slate-400">
+                      {((1 - funnelData[i + 1].value / stage.value) * 100).toFixed(0)}% drop-off
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
       </div>
 
-      {/* 5. TRANSACTION TABLE */}
-      <div className="bg-white border border-gray-100 p-8 rounded-xl shadow-sm space-y-8">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-[#111827] flex items-center gap-3">
-             <Shield size={20} className="text-blue-600" /> Recent Transactions
-          </h3>
-          <button className="text-blue-600 font-bold text-xs hover:underline">View All Registry</button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[#9ca3af] text-[10px] font-bold uppercase tracking-wider border-b border-gray-50">
-                <th className="pb-4 px-4">Transaction ID</th>
-                <th className="pb-4 px-4">Type</th>
-                <th className="pb-4 px-4 text-right">Amount</th>
-                <th className="pb-4 px-4">Date</th>
-                <th className="pb-4 px-4 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <tr key={i} className="group hover:bg-gray-50/50 transition-all">
-                  <td className="py-5 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10-lg-600 font-bold text-[10px]">TX</div>
-                      <span className="font-bold text-[#111827] text-sm">#TXN-{5234 + i}</span>
-                    </div>
-                  </td>
-                  <td className="py-5 px-4">
-                    <p className="text-[#111827] font-bold text-sm leading-none mb-1">Escrow Release</p>
-                    <p className="text-[10px] text-[#6b7280] font-medium uppercase tracking-wide">Project Completion</p>
-                  </td>
-                  <td className="py-5 px-4 text-right font-bold text-[#111827] text-base">₹{(4500 * (i + 1)).toLocaleString()}</td>
-                  <td className="py-5 px-4 text-[#6b7280] font-medium text-xs">Today, 12:34 PM</td>
-                  <td className="py-5 px-4 text-center">
-                    <div className="inline-flex items-center px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold">
-                       SUCCESS
-                    </div>
-                  </td>
+      {/* ── Growth Trend + Verification ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+        {/* Weekly Growth */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="xl:col-span-5 bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg transition-shadow"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+              <TrendingUp size={16} className="text-emerald-600" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">Weekly Growth</h3>
+          </div>
+          <div className="h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={growthData} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94A3B8" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="freelancers" fill="#3B82F6" radius={[6, 6, 0, 0]} name="Freelancers" />
+                <Bar dataKey="clients" fill="#10B981" radius={[6, 6, 0, 0]} name="Clients" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-50">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+              <div className="w-3 h-3 rounded bg-blue-500" /> Freelancers
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+              <div className="w-3 h-3 rounded bg-emerald-500" /> Clients
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Transactions + Verification */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="xl:col-span-7 bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow"
+        >
+          <div className="p-6 pb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                <ShieldCheck size={16} className="text-slate-600" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Recent Transactions</h3>
+            </div>
+            <button
+              className="text-blue-600 font-bold text-xs hover:underline"
+              onClick={() => {}}
+            >
+              View All
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-slate-400 text-[10px] font-bold uppercase tracking-wider border-b border-slate-100">
+                  <th className="pb-3 px-6">ID</th>
+                  <th className="pb-3 px-6">Type</th>
+                  <th className="pb-3 px-6 text-right">Amount</th>
+                  <th className="pb-3 px-6">Time</th>
+                  <th className="pb-3 px-6 text-center">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {[
+                  { id: 'TXN-5235', type: 'Escrow Release', amount: 9000, time: '12:34 PM', status: 'success' },
+                  { id: 'TXN-5236', type: 'Ad Payment', amount: 2500, time: '11:20 AM', status: 'success' },
+                  { id: 'TXN-5237', type: 'Subscription', amount: 1499, time: '10:05 AM', status: 'pending' },
+                  { id: 'TXN-5238', type: 'Payout', amount: 18000, time: '9:42 AM', status: 'success' },
+                  { id: 'TXN-5239', type: 'Refund', amount: 4500, time: '8:15 AM', status: 'refund' },
+                ].map(tx => (
+                  <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-3.5 px-6 text-sm font-bold text-slate-900">#{tx.id}</td>
+                    <td className="py-3.5 px-6 text-sm text-slate-600">{tx.type}</td>
+                    <td className="py-3.5 px-6 text-sm font-bold text-slate-900 text-right">₹{tx.amount.toLocaleString()}</td>
+                    <td className="py-3.5 px-6 text-xs text-slate-400 flex items-center gap-1"><Clock size={12} />{tx.time}</td>
+                    <td className="py-3.5 px-6 text-center">
+                      <span className={`inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${
+                        tx.status === 'success' ? 'bg-emerald-50 text-emerald-600' :
+                        tx.status === 'pending' ? 'bg-amber-50 text-amber-600' :
+                        'bg-rose-50 text-rose-600'
+                      }`}>{tx.status}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

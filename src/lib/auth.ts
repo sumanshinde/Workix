@@ -7,8 +7,23 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId:     process.env.GOOGLE_CLIENT_ID     ?? '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      clientId: (() => {
+        const id = process.env.GOOGLE_CLIENT_ID ?? '';
+        console.log(`[AUTH_DEBUG] Google Client ID loaded: ${id ? id.slice(0, 5) + '...' + id.slice(-10) : 'MISSING'}`);
+        return id;
+      })(),
+      clientSecret: (() => {
+        const secret = process.env.GOOGLE_CLIENT_SECRET ?? '';
+        if (!secret) console.warn('[AUTH_DEBUG] WARNING: Google Client Secret is MISSING');
+        return secret;
+      })(),
+      authorization: {
+        params: {
+          scope: 'openid email profile',
+          prompt: 'consent',
+          access_type: 'offline'
+        }
+      }
     }),
     GitHubProvider({
       clientId:     process.env.GITHUB_CLIENT_ID     ?? '',
@@ -28,6 +43,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+
         try {
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api'}/auth/login`, {
             method: 'POST',
@@ -46,9 +62,15 @@ export const authOptions: NextAuthOptions = {
               role: parsed.user.role,
               backendToken: parsed.token
             } as any;
+          } else {
+            throw new Error(parsed?.message || 'Invalid credentials provided.');
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error('Credentials auth failed', err);
+          // Only throw if it's our parsed API error
+          if (err.message && err.message !== 'fetch failed') {
+            throw new Error(err.message);
+          }
           // 8. Backend safety: Fallback mock authentication if API fails
           console.warn('Backend connection failed, using fallback mock authentication');
           if (credentials.email === 'test@gmail.com') {

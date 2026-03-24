@@ -20,6 +20,7 @@ import gigRoutes from './routes/gigs';
 import jobRoutes from './routes/jobs';
 import proposalRoutes from './routes/proposals';
 import paymentRoutes from './routes/payments';
+import saasPaymentRoutes from './routes/payment.routes';
 import payoutRoutes from './routes/payouts';
 import feeRoutes from './routes/fees';
 import reportRoutes from './routes/reports';
@@ -41,10 +42,18 @@ import onboardingRoutes from './routes/onboarding';
 import experimentRoutes from './routes/experiments';
 import adsRoutes from './routes/ads';
 import appsRoutes from './routes/apps';
+import requirementRoutes from './routes/requirements';
+import platformRoutes from './routes/platform';
+import locationRoutes from './routes/location';
 
 import { handleStripeWebhook, handleRazorpayWebhook } from './controllers/webhooks';
+import { startCronJobs } from './services/cron.service';
 
 dotenv.config();
+
+// Initialize background worker processes
+startCronJobs();
+
 
 const app = express();
 
@@ -82,9 +91,6 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
-app.use(mongoSanitize());
-app.use(xss());
-app.use(hpp());
 app.use(compression());
 
 // Global API Rate Limiting
@@ -106,6 +112,7 @@ app.use('/api/gigs', gigRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/proposals', proposalRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/saas-payments', saasPaymentRoutes);
 app.use('/api/payouts', payoutRoutes);
 app.use('/api/platform-fees', feeRoutes);
 app.use('/api/reports', reportRoutes);
@@ -127,6 +134,9 @@ app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/experiments', experimentRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/apps', appsRoutes);
+app.use('/api/requirements', requirementRoutes);
+app.use('/api/platform', platformRoutes);
+app.use('/api/location', locationRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'BharatGig API Cluster Operational', status: 'Healthy' });

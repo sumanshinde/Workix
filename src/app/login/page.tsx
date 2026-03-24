@@ -76,7 +76,9 @@ export default function LoginPage() {
       console.log('SignIn Response:', res);
       
       if (res?.error) {
-        setError(res.error || 'Invalid identity credentials. Please try again.');
+        let errorMessage = res.error;
+        if (res.error === 'CredentialsSignin') errorMessage = 'Invalid email or password. Please try again.';
+        setError(errorMessage);
         setLoading(null);
         return;
       }
@@ -96,11 +98,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 selection:bg-blue-100 selection:text-blue-600 relative overflow-hidden">
       
-      {/* Abstract Background Elements (Soft Blobs) */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-blue-500/10 rounded-full blur-[120px] transform-gpu will-change-transform" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[45%] h-[45%] bg-purple-500/10 rounded-full blur-[120px] transform-gpu will-change-transform" />
-      </div>
+      {/* Background blobs removed to prevent overlap with global layout blurs and reduce rendering lag */}
+
 
       {/* Logo */}
       <div

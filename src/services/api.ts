@@ -41,6 +41,18 @@ async function request<T = any>(
     // Silently fail for hidden tracking/analytics to prevent UI breakage during ad campaigns
     if (path.includes('/reports/track')) return {} as T;
 
+    if (res.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        // Use dynamic import for signOut to avoid SSR issues if this file is used server-side
+        import('next-auth/react').then(({ signOut }) => {
+          signOut({ redirect: true, callbackUrl: '/login?expired=1' });
+        });
+      }
+    }
+
     const err: any = await res.json().catch(() => ({ message: res.statusText }));
     const error: any = new Error(err.message || 'Request failed');
     error.status = res.status;
@@ -216,7 +228,10 @@ export const experimentAPI = {
 
 // ── Dashboard Aggregator ─────────────────────────────────────────────────────
 export const dashboardAPI = {
-  getStats: () => request('/dashboard/stats'),
+  getStats: () => {
+    if (typeof window !== 'undefined') console.trace('DEBUG: dashboardAPI.getStats called');
+    return request('/dashboard/stats');
+  },
 
   freelancer: async () => {
     try {
@@ -298,4 +313,75 @@ export const profileAPI = {
   getAnalysis: () => request('/profile/analysis'),
   improve:     (data: { action: string }) => request('/profile/improve', { method: 'POST', body: JSON.stringify(data) }),
   getCreditScore: () => request('/profile/credit-score'),
+};
+
+// ── Requirement Posts (GigIndia Marketplace) ─────────────────────────────────
+export const requirementsAPI = {
+  getAll:    (params?: { category?: string; city?: string; pincode?: string; search?: string }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/requirements${q ? '?' + q : ''}`);
+  },
+  getMy:     ()            => request('/requirements/my'),
+  getById:   (id: string)  => request(`/requirements/${id}`),
+  create:    (data: { title: string; category: string; location?: string; city?: string; pincode?: string; budget: number; description: string }) =>
+    request('/requirements', { method: 'POST', body: JSON.stringify(data) }),
+  verifyPayment: (data: { postId: string; razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
+    request('/requirements/verify-payment', { method: 'POST', body: JSON.stringify(data) }),
+  respond:   (postId: string) =>
+    request('/requirements/respond', { method: 'POST', body: JSON.stringify({ postId }) }),
+};
+
+// ── Enhanced Ads (GigIndia Marketplace) ──────────────────────────────────────
+export const adsAPI = {
+  getAll:          (params?: { target?: string; category?: string }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/ads${q ? '?' + q : ''}`);
+  },
+  getMy:           () => request('/ads/my'),
+  calculatePrice:  (data: { adType: string; durationDays: number }) =>
+    request('/ads/calculate-price', { method: 'POST', body: JSON.stringify(data) }),
+  create:          (data: any) =>
+    request('/ads', { method: 'POST', body: JSON.stringify(data) }),
+  verifyPayment:   (data: { adId: string; razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
+    request('/ads/verify-payment', { method: 'POST', body: JSON.stringify(data) }),
+  trackClick:      (adId: string) =>
+    request(`/ads/${adId}/click`, { method: 'POST' }),
+  trackView:       (adId: string) =>
+    request(`/ads/${adId}/view`, { method: 'POST' }),
+  getNearby:       (params: { lat?: number; lng?: number; city?: string; pincode?: string }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/ads/nearby?${q}`);
+  },
+};
+
+// ── Platform Management (Admin) ──────────────────────────────────────────────
+export const platformAPI = {
+  getSettings:      () => request('/platform/settings'),
+  updateSettings:   (data: any) => request('/platform/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  
+  // User management
+  getAllUsers:       (params?: { search?: string; role?: string; page?: number }) => {
+    const q = new URLSearchParams(params as any).toString();
+    return request(`/platform/users${q ? '?' + q : ''}`);
+  },
+  getUserDetail:    (id: string) => request(`/platform/users/${id}`),
+  toggleBlockUser:  (data: { userId: string; blocked: boolean; reason?: string }) =>
+    request('/platform/users/block', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Subscription management
+  getAllSubscriptions: () => request('/platform/subscriptions'),
+  updateSubscription: (data: { subscriptionId: string; status: string }) =>
+    request('/platform/subscriptions/update', { method: 'POST', body: JSON.stringify(data) }),
+  
+  // Ad management
+  getAllAds:        () => request('/platform/ads'),
+  moderateAd:      (data: { adId: string; action: string; reason?: string }) =>
+    request('/platform/ads/moderate', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Geolocation ──────────────────────────────────────────────────────────────
+export const locationAPI = {
+  save: (data: { lat: number; lng: number; address: string }) =>
+    request('/location/save', { method: 'POST', body: JSON.stringify(data) }),
+  get: () => request('/location'),
 };

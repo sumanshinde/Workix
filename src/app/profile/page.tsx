@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Card, Button } from '@/components/ui';
 import { useRouter, useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import ReviewList from '@/components/ReviewList';
@@ -44,6 +45,7 @@ const Section = ({ title, children, className = "", icon }: { title?: string, ch
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const t = BRANDING.theme;
   const [isMounted, setIsMounted] = useState(false);
   
@@ -54,8 +56,8 @@ export default function ProfilePage() {
   if (!isMounted) return null;
 
   const freelancer = {
-    name: "Aditya Sharma",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=800&q=80",
+    name: session?.user?.name || "Aditya Sharma",
+    avatar: session?.user?.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=800&q=80",
     role: "Senior Full Stack & AI Architect",
     rating: 4.95,
     reviews: 154,

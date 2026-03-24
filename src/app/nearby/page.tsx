@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Activity
 } from 'lucide-react';
+import { adsAPI } from '@/services/api';
 
 const CATEGORIES = ['All Operators', 'Software Dev', 'UI/UX Design', 'AI / ML', 'Marketing', 'Cybersecurity'];
 
@@ -24,6 +25,8 @@ export default function NearbyRadarPage() {
   const [activeCategory, setActiveCategory] = useState('All Operators');
   const [isScanning, setIsScanning] = useState(true);
   const [results, setResults] = useState<any[]>([]);
+  const [citySearch, setCitySearch] = useState('');
+  const [pincodeSearch, setPincodeSearch] = useState('');
 
   useEffect(() => {
     // Initial scan animation
@@ -32,9 +35,40 @@ export default function NearbyRadarPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleScan = () => {
+  const handleScan = async () => {
     setIsScanning(true);
+    
+    // If city or pincode provided, search from API
+    if (citySearch.trim() || pincodeSearch.trim()) {
+      try {
+        const apiResults = await adsAPI.getNearby({
+          city: citySearch.trim() || undefined,
+          pincode: pincodeSearch.trim() || undefined,
+        });
+        if (Array.isArray(apiResults) && apiResults.length > 0) {
+          // Map API results to display format
+          const mapped = apiResults.map((u: any, i: number) => ({
+            _id: u._id,
+            name: u.name,
+            category: u.skills?.[0] || 'Freelancer',
+            distance: Math.round(Math.random() * radius),
+            rating: u.rating || 4.5,
+            skills: u.skills?.slice(0, 3) || [],
+            avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=3b82f6&color=fff`,
+            isOnline: true,
+            lastActive: 'Now',
+            city: u.city || '',
+            pos: { x: `${15 + Math.random() * 70}%`, y: `${15 + Math.random() * 70}%` },
+          }));
+          setResults(mapped);
+          setIsScanning(false);
+          return;
+        }
+      } catch {}
+    }
+    
     setTimeout(() => {
+      setResults(MOCK_NEARBY);
       setIsScanning(false);
     }, 2000);
   };
@@ -57,7 +91,28 @@ export default function NearbyRadarPage() {
               </div>
            </div>
 
-           <div className="flex items-center gap-8 bg-[#0f1930] px-8 py-3 rounded-2xl border border-[#192540] shadow-sm">
+           <div className="flex items-center gap-8 bg-[#0f1930] px-8 py-3 rounded-2xl border border-[#192540] shadow-sm flex-wrap">
+              {/* Location Search */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={citySearch}
+                  onChange={(e) => setCitySearch(e.target.value)}
+                  placeholder="City..."
+                  className="w-28 px-3 py-1.5 bg-[#192540] border border-[#2a3a5c] rounded-lg text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                />
+                <input
+                  type="text"
+                  value={pincodeSearch}
+                  onChange={(e) => setPincodeSearch(e.target.value)}
+                  placeholder="Pincode..."
+                  maxLength={6}
+                  className="w-24 px-3 py-1.5 bg-[#192540] border border-[#2a3a5c] rounded-lg text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="h-10 w-[1px] bg-[#192540]" />
+
               <div className="flex flex-col gap-1 w-48">
                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
                     <span>Radius</span>

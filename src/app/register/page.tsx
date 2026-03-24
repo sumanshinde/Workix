@@ -1,298 +1,445 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/services/api';
-import { 
-  User, Mail, Lock, ArrowRight, ArrowLeft, 
-  Briefcase, Code, Eye, EyeOff
+import {
+  User, Mail, Phone, MapPin, ChevronDown,
+  Briefcase, Code, Eye, EyeOff, Loader2,
+  AlertCircle, CheckCircle2, ArrowLeft,
 } from 'lucide-react';
 import { BRANDING } from '@/lib/config';
-import { Button, Input } from '@/components/ui';
 
+// ── Types ────────────────────────────────────────────────────────────────────
 type Role = 'freelancer' | 'client';
 
-export default function RegisterPage() {
-  const [step, setStep]         = useState<1 | 2>(1);
-  const [role, setRole]         = useState<Role>('freelancer');
-  const [name, setName]         = useState('');
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw]     = useState(false);
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [mounted, setMounted]   = useState(false);
+interface FormData {
+  fullName: string;
+  email: string;
+  phone: string;
+  countryCode: string;
+  city: string;
+  gender: string;
+  category: string;
+  password: string;
+}
+
+interface FormErrors {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  gender?: string;
+  category?: string;
+  password?: string;
+}
+
+// ── Country codes ────────────────────────────────────────────────────────────
+const COUNTRY_CODES = [
+  { code: '+91', flag: '🇮🇳', country: 'India' },
+  { code: '+1', flag: '🇺🇸', country: 'USA' },
+  { code: '+44', flag: '🇬🇧', country: 'UK' },
+  { code: '+971', flag: '🇦🇪', country: 'UAE' },
+  { code: '+65', flag: '🇸🇬', country: 'Singapore' },
+  { code: '+61', flag: '🇦🇺', country: 'Australia' },
+];
+
+// ── Categories ───────────────────────────────────────────────────────────────
+const FREELANCER_CATEGORIES = [
+  'Web Development', 'Mobile App Development', 'UI/UX Design',
+  'Graphic Design', 'Content Writing', 'Digital Marketing',
+  'Video Editing', 'SEO Expert', 'Virtual Assistant', 'Other',
+];
+
+const BUSINESS_CATEGORIES = [
+  'Technology', 'E-Commerce', 'Healthcare',
+  'Education', 'Finance', 'Real Estate',
+  'Retail', 'Consulting', 'Logistics', 'Other',
+];
+
+// ── Custom Select component ──────────────────────────────────────────────────
+interface SelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: { label: string; value: string }[];
+  placeholder: string;
+  error?: string;
+  disabled?: boolean;
+}
+
+const CustomSelect = ({ value, onChange, options, placeholder, error, disabled }: SelectProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selected = options.find(o => o.value === value);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`
+          w-full h-12 bg-white border text-left rounded-xl px-4 text-sm font-medium
+          transition-all duration-200 outline-none flex items-center gap-3
+          ${error ? 'border-red-400 focus:ring-1 focus:ring-red-400' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}
+          ${isOpen ? 'border-blue-500 ring-1 ring-blue-500 bg-white' : ''}
+          ${disabled ? 'opacity-50 pointer-events-none bg-gray-50' : ''}
+        `}
+      >
+        <span className={`flex-1 truncate ${selected ? 'text-gray-900' : 'text-gray-400'}`}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <ChevronDown size={18} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -8, scaleY: 0.95 }}
+              animate={{ opacity: 1, y: 0, scaleY: 1 }}
+              exit={{ opacity: 0, y: -8, scaleY: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute z-50 mt-1 w-full max-h-48 overflow-auto bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] origin-top"
+            >
+              <div className="py-1.5">
+                {options.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                    className={`
+                      w-full text-left px-4 py-2 text-sm font-medium transition-colors
+                      ${value === opt.value ? 'bg-blue-50/70 text-blue-600 font-semibold' : 'text-gray-600 hover:bg-gray-50'}
+                    `}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ── Main Component ───────────────────────────────────────────────────────────
+export default function GigIndiaRegisterPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [role, setRole] = useState<Role>('freelancer');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+
+  const [form, setForm] = useState<FormData>({
+    fullName: '', email: '', phone: '', countryCode: '+91',
+    city: '', gender: '', category: '', password: '',
+  });
+
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => { setMounted(true); }, []);
-  if (!mounted) return null;
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const updateField = useCallback((field: keyof FormData, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setTouched(prev => ({ ...prev, [field]: true }));
+    if (errors[field as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  }, [errors]);
+
+  const validate = useCallback((): boolean => {
+    const e: FormErrors = {};
+    if (!form.fullName.trim()) e.fullName = 'Required';
+    else if (form.fullName.trim().length < 2) e.fullName = 'Min 2 chars';
+
+    if (!form.email.trim()) e.email = 'Required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email';
+
+    if (!form.phone.trim()) e.phone = 'Required';
+    else if (form.phone.length < 10) e.phone = 'Invalid phone';
+
+    if (!form.city.trim()) e.city = 'Required';
+    if (!form.gender) e.gender = 'Required';
+    if (!form.category) e.category = 'Required';
+    
+    if (!form.password) e.password = 'Required';
+    else if (form.password.length < 8) e.password = 'Min 8 chars';
+
+    setErrors(e);
+    setTouched({ fullName: true, email: true, phone: true, city: true, gender: true, category: true, password: true });
+    return Object.keys(e).length === 0;
+  }, [form]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    if (!validate()) return;
+
+    setLoading(true);
     try {
-      const res = await authAPI.register({ name, email, password, role });
+      const res = await authAPI.register({
+        name: form.fullName, email: form.email, password: form.password, role,
+      });
+
       if (res.success || res.token) {
-        const userData = res.user || { name, email, role };
+        const userData = res.user || { name: form.fullName, email: form.email, role };
         localStorage.setItem('user', JSON.stringify(userData));
         if (res.token) localStorage.setItem('token', res.token);
         
-        router.push('/onboarding');
+        setSuccess(true);
+        setTimeout(() => router.push('/onboarding'), 1500);
       } else {
-        setError(res.message || 'Registration failed. Please try again.');
+        setError(res.message || 'Registration failed.');
       }
     } catch (err: any) {
-      console.error('Registration error:', err);
-      setError(err?.message || 'Connection to security server failed. Please try again.');
+      setError(err?.message || 'Server connection failed.');
     } finally {
       setLoading(false);
     }
   };
 
-  const roles: { id: Role; icon: React.ReactNode; title: string; subtitle: string; perks: string[] }[] = [
-    {
-      id: 'freelancer',
-      icon: <Code size={22} />,
-      title: 'I want to work',
-      subtitle: 'Freelancer / Service Provider',
-      perks: ['Create gig packages', 'Bid on job posts', 'Track earnings'],
-    },
-    {
-      id: 'client',
-      icon: <Briefcase size={22} />,
-      title: 'I want to hire',
-      subtitle: 'Client / Business Owner',
-      perks: ['Post jobs & projects', 'Search verified talent', 'Manage payments'],
-    },
-  ];
+  useEffect(() => { setForm(prev => ({ ...prev, category: '' })); }, [role]);
+
+  if (!mounted) return null;
+
+  const categories = role === 'freelancer' ? FREELANCER_CATEGORIES : BUSINESS_CATEGORIES;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 selection:bg-blue-100 selection:text-blue-600 relative overflow-hidden">
-
-      {/* Abstract Background Elements (Soft Blobs) */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-blue-500/10 rounded-full blur-[120px] transform-gpu will-change-transform" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[45%] h-[45%] bg-purple-500/10 rounded-full blur-[120px] transform-gpu will-change-transform" />
+    <div className="min-h-screen relative flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-gray-50">
+      
+      {/* ── Background Blurred Image Collage ── */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1600&q=80")' }} />
+        <div className="absolute inset-0 bg-white/70 backdrop-blur-[12px] md:backdrop-blur-[20px]" />
       </div>
 
-      {/* Logo */}
-      <div
-        className="relative z-10 flex items-center gap-3 mb-10 cursor-pointer group"
-        onClick={() => router.push('/')}
-      >
-        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform duration-300">
-          {BRANDING.shortName}
-        </div>
-        <span className="text-2xl font-bold text-slate-900 tracking-tight">{BRANDING.name}</span>
-      </div>
+      <div className="relative z-10 w-full max-w-[500px]">
+        {/* ── Centered White Card ── */}
+        <div className="bg-white rounded-2xl md:rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-gray-100">
+          
+          <div className="px-8 pt-10 pb-6 text-center">
+            {/* Header */}
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Signup As Freelancer or Business</h1>
+            <p className="text-[13px] text-gray-500 font-medium">Join {BRANDING.name} to connect with top talent & clients.</p>
+          </div>
 
-      {/* Center Wrapper */}
-      <div className="relative z-10 w-full max-w-[440px]">
-        
-        {/* Step Indicator */}
-        <div className="flex justify-center items-center gap-3 mb-8">
-          {[1, 2].map(s => (
-            <div 
-              key={s} 
-              className={`h-1.5 transition-all duration-500 rounded-full ${
-                step === s ? 'w-10 bg-gradient-to-r from-blue-600 to-indigo-600 shadow-sm shadow-blue-500/20' : (s < step ? 'w-4 bg-blue-300' : 'w-4 bg-slate-200')
-              }`} 
-            />
-          ))}
-        </div>
+          <div className="px-8 pb-8">
+            
+            {/* ── Role Toggle (Pill Style) ── */}
+            <div className="flex gap-4 mb-7 justify-center">
+              <button
+                type="button"
+                onClick={() => setRole('freelancer')}
+                className={`
+                  flex-1 py-3 px-4 rounded-full text-sm font-semibold transition-all duration-200 border-2
+                  ${role === 'freelancer' 
+                    ? 'border-blue-600 bg-blue-50 text-blue-700' 
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                  }
+                `}
+              >
+                Freelancer
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('client')}
+                className={`
+                  flex-1 py-3 px-4 rounded-full text-sm font-semibold transition-all duration-200 border-2
+                  ${role === 'client' 
+                    ? 'border-blue-600 bg-blue-50 text-blue-700' 
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                  }
+                `}
+              >
+                Business
+              </button>
+            </div>
 
-        <AnimatePresence mode="wait">
+            {/* Error Message */}
+            <AnimatePresence>
+              {error && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                  <div className="mb-5 bg-red-50 text-red-600 text-[13px] p-3.5 rounded-xl border border-red-100 flex items-start gap-2.5 font-medium leading-snug">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* ── STEP 1: Role Selection ── */}
-          {step === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-              transition={{ duration: 0.3 }}
-              className="bg-white/80 backdrop-blur-xl border border-slate-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] rounded-[24px] overflow-hidden"
-            >
-              <div className="pt-10 pb-4 text-center px-8">
-                <h2 className="text-3xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 tracking-tight">
-                  Join BharatGig
-                </h2>
-                <p className="text-[15px] font-medium text-slate-500">How do you want to use the platform?</p>
-              </div>
-
-              <div className="px-8 pb-10 space-y-6 mt-4">
-                <div className="grid grid-cols-1 gap-4">
-                  {roles.map(r => (
-                    <button
-                      key={r.id}
-                      type="button"
-                      onClick={() => setRole(r.id)}
-                      className={`w-full text-left p-4 rounded-[20px] transition-all duration-300 flex items-center gap-5 border-2 relative overflow-hidden group ${
-                        role === r.id
-                          ? 'border-blue-600 bg-blue-50/50 shadow-md shadow-blue-500/10'
-                          : 'border-slate-100 bg-white hover:border-blue-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      {role === r.id && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 pointer-events-none" />
-                      )}
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors shadow-sm shrink-0 border border-white ${
-                        role === r.id ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50'
-                      }`}>
-                        {r.icon}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`font-extrabold text-[15px] ${role === r.id ? 'text-blue-900' : 'text-slate-900'} tracking-tight`}>
-                          {r.subtitle.split(' / ')[0]}
-                        </p>
-                        <p className="text-[12px] text-slate-500 font-medium mt-0.5">
-                          {r.id === 'freelancer' ? 'Get paid for top-tier work' : 'Hire elite verified talent'}
-                        </p>
-                      </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-                        role === r.id ? 'border-blue-600 bg-blue-600' : 'border-slate-200 bg-white'
-                      }`}>
-                        {role === r.id && <div className="w-1.5 h-1.5 rounded-full bg-white animate-in zoom-in" />}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="pt-2">
-                  <Button
-                    onClick={() => setStep(2)}
-                    className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-[15px] transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/25 border-none"
-                    rightIcon={<ArrowRight size={18} />}
+            {/* ── Inputs Form ── */}
+            <form onSubmit={handleSubmit} className="space-y-4 relative">
+              
+              {/* Overlay for success state */}
+              <AnimatePresence>
+                {success && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute inset-0 z-20 bg-white/60 backdrop-blur-[2px] rounded-xl flex items-center justify-center flex-col gap-3"
                   >
-                    Continue to Registration
-                  </Button>
+                    <div className="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                      <CheckCircle2 size={32} />
+                    </div>
+                    <p className="font-bold text-gray-900 text-lg">Profile Created!</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Full Name */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={form.fullName}
+                  onChange={e => updateField('fullName', e.target.value)}
+                  disabled={loading}
+                  className={`w-full h-12 bg-white border ${touched.fullName && errors.fullName ? 'border-red-400' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'} rounded-xl px-4 text-sm font-medium outline-none transition-all placeholder:text-gray-400`}
+                />
+                {touched.fullName && errors.fullName && <p className="text-[11px] text-red-500 font-semibold mt-1 ml-1">{errors.fullName}</p>}
+              </div>
+
+              {/* Email */}
+              <div>
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  value={form.email}
+                  onChange={e => updateField('email', e.target.value)}
+                  disabled={loading}
+                  className={`w-full h-12 bg-white border ${touched.email && errors.email ? 'border-red-400' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'} rounded-xl px-4 text-sm font-medium outline-none transition-all placeholder:text-gray-400`}
+                />
+                {touched.email && errors.email && <p className="text-[11px] text-red-500 font-semibold mt-1 ml-1">{errors.email}</p>}
+              </div>
+
+              {/* Phone + Country Code */}
+              <div className="flex gap-2">
+                <div className="relative shrink-0">
+                  <select
+                    value={form.countryCode}
+                    onChange={e => updateField('countryCode', e.target.value)}
+                    disabled={loading}
+                    className="h-12 bg-white border border-gray-200 focus:border-blue-500 rounded-xl pl-3 pr-8 text-sm font-medium outline-none appearance-none cursor-pointer"
+                  >
+                    {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="tel"
+                    placeholder="Phone"
+                    value={form.phone}
+                    onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    disabled={loading}
+                    className={`w-full h-12 bg-white border ${touched.phone && errors.phone ? 'border-red-400' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'} rounded-xl px-4 text-sm font-medium outline-none transition-all placeholder:text-gray-400`}
+                  />
+                  {touched.phone && errors.phone && <p className="text-[11px] text-red-500 font-semibold mt-1 ml-1">{errors.phone}</p>}
                 </div>
               </div>
 
-              <div className="py-6 bg-slate-50/50 border-t border-slate-100 text-center">
-                <p className="text-[13px] font-medium text-slate-500">
-                  ALREADY HAVE AN ACCOUNT?{' '}
-                  <a href="/login" className="text-blue-600 font-semibold hover:text-indigo-600 transition-colors uppercase tracking-wider text-[11px] ml-1">
-                    Sign In
-                  </a>
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── STEP 2: Account Details ── */}
-          {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
-              transition={{ duration: 0.3 }}
-              className="bg-white/80 backdrop-blur-xl border border-slate-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] rounded-[24px] overflow-hidden"
-            >
-              <div className="pt-10 pb-4 text-center px-8">
-                <h2 className="text-3xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 tracking-tight">
-                  Profile Details
-                </h2>
-                <p className="text-[15px] font-medium text-slate-500">Joining as a <span className="text-blue-600 capitalize font-bold">{role}</span></p>
+              {/* City + Gender */}
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="City / Town"
+                    value={form.city}
+                    onChange={e => updateField('city', e.target.value)}
+                    disabled={loading}
+                    className={`w-full h-12 bg-white border ${touched.city && errors.city ? 'border-red-400' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'} rounded-xl px-4 text-sm font-medium outline-none transition-all placeholder:text-gray-400`}
+                  />
+                  {touched.city && errors.city && <p className="text-[11px] text-red-500 font-semibold mt-1 ml-1">{errors.city}</p>}
+                </div>
+                <div className="w-[120px]">
+                  <CustomSelect
+                    value={form.gender}
+                    onChange={v => updateField('gender', v)}
+                    placeholder="Gender"
+                    options={[{label: 'Male', value: 'male'}, {label: 'Female', value: 'female'}, {label: 'Other', value: 'other'}]}
+                    disabled={loading}
+                    error={touched.gender ? errors.gender : undefined}
+                  />
+                  {touched.gender && errors.gender && <p className="text-[11px] text-red-500 font-semibold mt-1 ml-1">{errors.gender}</p>}
+                </div>
               </div>
 
-              <div className="px-8 pb-8 space-y-6 mt-2">
-                {error && (
-                  <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center gap-3 text-red-600 text-sm font-medium">
-                    <ShieldAlert size={18} className="shrink-0" />
-                    <p className="leading-snug">{error}</p>
-                  </div>
-                )}
-
-                <form onSubmit={handleRegister} className="space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 px-1">Full Name</label>
-                    <Input
-                      type="text"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      placeholder="Arjun Sharma"
-                      required
-                      disabled={loading}
-                      className="h-12 rounded-xl bg-[#f9fafb] border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200 text-[15px]"
-                      leftIcon={<User size={20} className="text-slate-400" />}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 px-1">Email Address</label>
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="arjun@company.com"
-                      required
-                      disabled={loading}
-                      className="h-12 rounded-xl bg-[#f9fafb] border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200 text-[15px]"
-                      leftIcon={<Mail size={20} className="text-slate-400" />}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 px-1">Secure Password</label>
-                    <Input
-                      type={showPw ? "text" : "password"}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="Minimum 8 characters"
-                      required
-                      minLength={8}
-                      disabled={loading}
-                      className="h-12 rounded-xl bg-[#f9fafb] border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200 text-[15px]"
-                      leftIcon={<Lock size={20} className="text-slate-400" />}
-                      rightIcon={
-                        <button 
-                          type="button" 
-                          onClick={() => setShowPw(!showPw)}
-                          className="flex items-center h-full px-2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors pointer-events-auto"
-                        >
-                          {showPw ? <EyeOff size={20} /> : <Eye size={20} />}
-                        </button>
-                      }
-                    />
-                  </div>
-
-                  <div className="pt-4">
-                    <Button
-                      type="submit"
-                      isLoading={loading}
-                      disabled={loading}
-                      className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-[15px] transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/25 border-none disabled:opacity-70 disabled:hover:scale-100 disabled:active:scale-100"
-                    >
-                      Finalize Account
-                    </Button>
-                  </div>
-                </form>
+              {/* Category */}
+              <div>
+                <CustomSelect
+                  value={form.category}
+                  onChange={v => updateField('category', v)}
+                  placeholder="Category"
+                  options={categories.map(c => ({ label: c, value: c.toLowerCase() }))}
+                  disabled={loading}
+                  error={touched.category ? errors.category : undefined}
+                />
+                {touched.category && errors.category && <p className="text-[11px] text-red-500 font-semibold mt-1 ml-1">{errors.category}</p>}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+              {/* Password */}
+              <div className="relative">
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="Account Password"
+                  value={form.password}
+                  onChange={e => updateField('password', e.target.value)}
+                  disabled={loading}
+                  className={`w-full h-12 bg-white border ${touched.password && errors.password ? 'border-red-400' : 'border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'} rounded-xl px-4 pr-12 text-sm font-medium outline-none transition-all placeholder:text-gray-400`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+                {touched.password && errors.password && <p className="text-[11px] text-red-500 font-semibold mt-1 ml-1">{errors.password}</p>}
+              </div>
+
+              {/* ── CREATE PROFILE BUTTON ── */}
+              <div className="pt-3">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-14 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white font-bold text-sm tracking-wide rounded-xl shadow-[0_8px_20px_rgb(249,115,22,0.3)] transition-all hover:-translate-y-0.5 active:scale-[0.98] outline-none flex items-center justify-center gap-2"
+                >
+                 {loading ? <><Loader2 size={18} className="animate-spin" /> Processing...</> : 'CREATE PROFILE'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+
+          {/* ── Footer ── */}
+          <div className="bg-gray-50 border-t border-gray-100 p-6 text-center space-y-4">
+            <p className="text-xs text-gray-500 leading-relaxed max-w-[340px] mx-auto">
+              By creating your profile you agree to the{' '}
+              <a href="/terms" className="text-blue-600 font-semibold hover:underline">Terms of Service</a> and{' '}
+              <a href="/privacy" className="text-blue-600 font-semibold hover:underline">Privacy Policy</a>
+            </p>
+            <div className="pt-2">
+              <span className="text-sm font-medium text-gray-600">Already have an account? </span>
+              <a href="/login" className="text-blue-600 font-semibold hover:underline">Login here</a>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Back Button */}
+        <div className="text-center mt-6">
+          <a href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors bg-white/50 backdrop-blur-md px-4 py-2 rounded-full border border-gray-200">
+            <ArrowLeft size={16} /> Back to home
+          </a>
+        </div>
       </div>
-
-      {/* Bottom Nav Links */}
-      <button
-        onClick={() => step === 2 ? setStep(1) : router.push('/')}
-        className="relative z-10 mt-8 text-[13px] font-medium text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-1.5"
-      >
-        <ArrowLeft size={14} /> {step === 2 ? 'Back to Role Selection' : 'Cancel and return home'}
-      </button>
     </div>
   );
 }
-
-// Minimal icons to replace missing imports if necessary
-const ShieldAlert = ({ size, className }: any) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-    <line x1="12" y1="8" x2="12" y2="12" />
-    <line x1="12" y1="16" x2="12.01" y2="16" />
-  </svg>
-);

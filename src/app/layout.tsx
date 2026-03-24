@@ -1,15 +1,19 @@
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
+import dynamic from 'next/dynamic';
 import './globals.css';
 import { Providers } from './providers';
-import { VideoRecorderWidget } from '@/components/VideoRecorderWidget';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+
+const VideoRecorderWidget = dynamic(() => import('@/components/VideoRecorderWidget'), { ssr: false });
+const ErrorBoundary = dynamic(() => import('@/components/ErrorBoundary'), { ssr: false });
+
+
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', weight: ['400', '500', '600', '700', '800'] });
 const poppins = Poppins({ subsets: ['latin'], variable: '--font-poppins', weight: ['600', '700'] });
 
 export const metadata: Metadata = {
-  title: 'BharatGig | Premium Freelance Marketplace',
+  title: 'BharatGig / GigIndia | Premium Freelance Marketplace',
   description: 'The heartbeat of Indian talent. Connect with top freelancers, manage projects with Lead Lock, and secure transactions with e-KYC.',
 };
 

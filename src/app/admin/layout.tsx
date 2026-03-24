@@ -1,58 +1,127 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, Users, Briefcase, CreditCard, 
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import {
+  LayoutDashboard, Users, Briefcase, CreditCard,
   BarChart3, Bell, Settings, LogOut, Search,
-  Menu, X, ChevronRight, ShieldCheck, Zap,
-  Activity, Globe, Terminal, Shield, Sparkles, MessageSquare
+  Menu, X, ChevronDown, ShieldCheck, Zap,
+  Activity, Globe, Shield, Sparkles, MessageSquare,
+  Megaphone, Receipt, Scale, Gift, Moon, Sun,
+  ChevronLeft, Command, UserCheck, Building2,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BRANDING } from '@/lib/config';
 
-interface AdminSidebarItemProps {
+// ── Theme Context ────────────────────────────────────────────────────────────
+interface ThemeCtx { dark: boolean; toggle: () => void }
+const ThemeContext = createContext<ThemeCtx>({ dark: false, toggle: () => {} });
+export const useAdminTheme = () => useContext(ThemeContext);
+
+// ── Menu structure ───────────────────────────────────────────────────────────
+interface MenuItem {
   icon: React.ReactNode;
   label: string;
   path: string;
-  active: boolean;
-  collapsed: boolean;
+  badge?: string;
+  badgeColor?: string;
 }
 
-const AdminSidebarItem = ({ icon, label, path, active, collapsed }: AdminSidebarItemProps) => {
-  const router = useRouter();
-  const t = BRANDING.theme;
-  
-  return (
-    <div 
-      onClick={() => router.push(path)}
-      style={{ 
-        backgroundColor: active ? t.primary : 'transparent',
-        color: active ? '#FFFFFF' : t.textSecondary
-      }}
-      className={`
-        flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-300
-        ${active ? 'shadow-lg shadow-blue-500/10 text-white' : 'hover:bg-slate-100 hover:text-blue-600'}
-      `}
-    >
-      <div className={`shrink-0 ${active ? 'text-white' : 'text-slate-400 opacity-60'}`}>{React.cloneElement(icon as React.ReactElement, { size: 18 })}</div>
-      {!collapsed && (
-        <span className="font-bold text-[10px] uppercase tracking-widest whitespace-nowrap">{label}</span>
-      )}
-      {active && !collapsed && (
-        <div className="ml-auto w-1 h-1 rounded-full bg-white opacity-60 animate-pulse" />
-      )}
-    </div>
-  );
-};
+interface MenuSection {
+  title: string;
+  items: MenuItem[];
+}
 
+const MENU_SECTIONS: MenuSection[] = [
+  {
+    title: 'Overview',
+    items: [
+      { icon: <LayoutDashboard size={18} />, label: 'Dashboard', path: '/admin/dashboard' },
+      { icon: <Activity size={18} />, label: 'Activity', path: '/admin/activity' },
+      { icon: <MessageSquare size={18} />, label: 'Messages', path: '/admin/messages' },
+    ],
+  },
+  {
+    title: 'People',
+    items: [
+      { icon: <Users size={18} />, label: 'All Users', path: '/admin/users' },
+      { icon: <UserCheck size={18} />, label: 'Freelancers', path: '/admin/users/manage', badge: '', badgeColor: '' },
+      { icon: <Building2 size={18} />, label: 'Clients', path: '/admin/leads' },
+    ],
+  },
+  {
+    title: 'Operations',
+    items: [
+      { icon: <Briefcase size={18} />, label: 'Jobs / Requirements', path: '/admin/jobs' },
+      { icon: <Receipt size={18} />, label: 'Orders & Transactions', path: '/admin/orders' },
+      { icon: <CreditCard size={18} />, label: 'Payments & Payouts', path: '/admin/payouts' },
+      { icon: <Scale size={18} />, label: 'Disputes', path: '/admin/disputes', badge: '!', badgeColor: 'bg-rose-500' },
+    ],
+  },
+  {
+    title: 'Growth',
+    items: [
+      { icon: <Gift size={18} />, label: 'Referrals', path: '/admin/referrals' },
+      { icon: <Megaphone size={18} />, label: 'Ads Management', path: '/admin/ads' },
+      { icon: <Sparkles size={18} />, label: 'Subscriptions', path: '/admin/subscriptions' },
+      { icon: <BarChart3 size={18} />, label: 'Analytics', path: '/admin/analytics' },
+    ],
+  },
+];
+
+// ── Sidebar Item ─────────────────────────────────────────────────────────────
+const SidebarItem = ({
+  icon, label, path, active, collapsed, badge, badgeColor, dark, onClick,
+}: MenuItem & { active: boolean; collapsed: boolean; dark: boolean; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className={`
+      w-full flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer
+      transition-all duration-200 text-left group relative
+      ${active
+        ? dark
+          ? 'bg-blue-600/20 text-blue-400'
+          : 'bg-blue-50 text-blue-700'
+        : dark
+          ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+      }
+    `}
+  >
+    {active && (
+      <motion.div
+        layoutId="activeIndicator"
+        className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full ${dark ? 'bg-blue-400' : 'bg-blue-600'}`}
+        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+      />
+    )}
+    <span className={`shrink-0 transition-colors ${active ? (dark ? 'text-blue-400' : 'text-blue-600') : ''}`}>
+      {icon}
+    </span>
+    {!collapsed && (
+      <>
+        <span className="font-semibold text-[13px] tracking-tight flex-1 truncate">{label}</span>
+        {badge && (
+          <span className={`w-5 h-5 rounded-full ${badgeColor || 'bg-blue-500'} text-white text-[9px] font-bold flex items-center justify-center`}>
+            {badge}
+          </span>
+        )}
+      </>
+    )}
+  </button>
+);
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  MAIN LAYOUT
+// ═════════════════════════════════════════════════════════════════════════════
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [dark, setDark] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const t = BRANDING.theme;
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -61,177 +130,265 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const menuItems = [
-    { icon: <LayoutDashboard />, label: 'Overview', path: '/admin/dashboard' },
-    { icon: <Activity />, label: 'Activity', path: '/admin/activity' },
-    { icon: <MessageSquare />, label: 'Messages', path: '/admin/messages' },
-    { icon: <Users />, label: 'Directory', path: '/admin/users' },
-    { icon: <Briefcase />, label: 'Services', path: '/admin/jobs' },
-    { icon: <CreditCard />, label: 'Finances', path: '/admin/payouts' },
-    { icon: <BarChart3 />, label: 'Analytics', path: '/admin/analytics' },
-  ];
+  // Persist dark mode
+  useEffect(() => {
+    const saved = localStorage.getItem('admin-dark');
+    if (saved === 'true') setDark(true);
+  }, []);
+
+  const toggleDark = () => {
+    setDark(d => {
+      localStorage.setItem('admin-dark', String(!d));
+      return !d;
+    });
+  };
 
   const handleLogout = () => {
     localStorage.clear();
     router.push('/login');
   };
 
-  return (
-    <div className="flex min-h-screen bg-white text-slate-600 selection:bg-blue-100 selection:text-blue-600">
-      {/* 1. SIDEBAR - DESKTOP CLUSTER */}
-      <aside 
-        style={{ backgroundColor: '#F8FAFC' }}
-        className={`
-          hidden lg:flex flex-col border-r border-slate-50 transition-all duration-300
-          sticky top-0 h-screen
-          ${collapsed ? 'w-20' : 'w-60'}
-        `}
-      >
-        <div 
+  const navigate = (path: string) => {
+    router.push(path);
+    if (isMobile) setShowMobileMenu(false);
+  };
+
+  // ── Sidebar Content (shared desktop/mobile) ────────────────────────────────
+  const SidebarContent = ({ mobile = false }: { mobile?: boolean }) => {
+    const isCollapsed = mobile ? false : collapsed;
+
+    return (
+      <div className={`flex flex-col h-full ${dark ? 'bg-slate-900' : 'bg-white'}`}>
+        {/* Logo */}
+        <div
           onClick={() => router.push('/')}
-          className="flex items-center h-16 px-6 border-b border-slate-50 cursor-pointer group"
+          className={`flex items-center h-16 px-5 border-b cursor-pointer group shrink-0 ${dark ? 'border-slate-800' : 'border-slate-100'}`}
         >
           <div className="flex items-center gap-3">
-            <div 
-              style={{ backgroundColor: t.primary }}
-              className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm shadow-blue-500/10 group-hover:rotate-6 transition-transform"
-            >
-              <Zap size={18} className="text-white fill-white" />
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+              <Zap size={16} className="text-white fill-white" />
             </div>
-            {!collapsed && (
-              <span className="font-semibold text-xl tracking-tight text-gray-900">{BRANDING.name}</span>
+            {!isCollapsed && (
+              <div>
+                <span className={`font-bold text-base tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+                  {BRANDING.name}
+                </span>
+                <span className={`block text-[9px] font-bold uppercase tracking-[0.15em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Admin Console
+                </span>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="flex-1 py-8 px-4 space-y-1 overflow-y-auto no-scrollbar">
-          {!collapsed && (
-            <div className="px-3 mb-3">
-               <span className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">Infrastructure</span>
+        {/* Menu */}
+        <div className="flex-1 py-4 px-3 space-y-5 overflow-y-auto scrollbar-thin">
+          {MENU_SECTIONS.map(section => (
+            <div key={section.title}>
+              {!isCollapsed && (
+                <p className={`px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] ${dark ? 'text-slate-600' : 'text-slate-300'}`}>
+                  {section.title}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {section.items.map(item => (
+                  <SidebarItem
+                    key={item.path}
+                    {...item}
+                    active={pathname === item.path || (item.path !== '/admin/dashboard' && pathname.startsWith(item.path + '/'))}
+                    collapsed={isCollapsed}
+                    dark={dark}
+                    onClick={() => navigate(item.path)}
+                  />
+                ))}
+              </div>
             </div>
-          )}
-          {menuItems.map((item) => (
-            <AdminSidebarItem 
-              key={item.path}
-              icon={item.icon}
-              label={item.label}
-              path={item.path}
-              active={pathname === item.path}
-              collapsed={collapsed}
-            />
           ))}
         </div>
 
-        <div className="p-4 border-t border-slate-50 space-y-1">
-           <AdminSidebarItem 
-              icon={<Settings />} 
-              label="Config" 
-              path="/admin/settings" 
-              active={pathname === '/admin/settings'} 
-              collapsed={collapsed}
-           />
-           <div 
-             onClick={handleLogout}
-             className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all group"
-           >
-             <LogOut size={18} className="group-hover:translate-x-0.5 transition-transform" />
-             {!collapsed && <span className="font-bold text-[10px] uppercase tracking-widest">Terminate</span>}
-           </div>
+        {/* Bottom */}
+        <div className={`px-3 py-3 border-t space-y-1 shrink-0 ${dark ? 'border-slate-800' : 'border-slate-100'}`}>
+          <SidebarItem
+            icon={<Settings size={18} />}
+            label="Settings"
+            path="/admin/settings"
+            active={pathname === '/admin/settings' || pathname.startsWith('/admin/settings/')}
+            collapsed={isCollapsed}
+            dark={dark}
+            onClick={() => navigate('/admin/settings')}
+          />
+          <button
+            onClick={handleLogout}
+            className={`
+              w-full flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer
+              transition-all duration-200 text-left group
+              ${dark ? 'text-slate-500 hover:bg-rose-500/10 hover:text-rose-400' : 'text-slate-400 hover:bg-rose-50 hover:text-rose-500'}
+            `}
+          >
+            <LogOut size={18} className="group-hover:translate-x-0.5 transition-transform" />
+            {!isCollapsed && <span className="font-semibold text-[13px]">Logout</span>}
+          </button>
         </div>
-      </aside>
-
-      {/* 2. MAIN CONTENT HUB */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white ml-0 lg:ml-0 overflow-hidden">
-        <header className="h-16 px-6 border-b border-gray-100 bg-white/90 backdrop-blur-sm sticky top-0 z-40 flex items-center justify-between shadow-sm">
-           <div className="flex items-center gap-4">
-             <button 
-               onClick={() => setCollapsed(!collapsed)}
-               className="hidden lg:flex p-2 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-lg text-slate-300 transition-all"
-             >
-               <Menu size={18} />
-             </button>
-             <div className="lg:hidden p-2 hover:bg-slate-50 rounded-lg text-slate-300" onClick={() => setShowMobileMenu(true)}>
-               <Menu size={22} />
-             </div>
-             
-             {/* Admin OmniSearch */}
-             <div className="hidden md:flex items-center gap-3 bg-slate-50/50 border border-slate-50 rounded-xl px-4 py-1.5 w-[360px] focus-within:bg-white focus-within:border-blue-500/20 transition-all">
-               <Search size={14} className="text-slate-300" />
-               <input 
-                 type="text" 
-                 placeholder="Search Users..." 
-                 className="bg-transparent border-none shadow-none ring-0 outline-none text-[11px] w-full font-bold text-slate-900 placeholder:text-slate-200"
-               />
-               <div className="hidden lg:block px-1.5 py-0.5 bg-white border border-slate-100 rounded text-[8px] font-bold text-slate-200">⌘K</div>
-             </div>
-           </div>
-
-           <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-3 px-4 py-1.5 border border-emerald-50 bg-emerald-50/50 rounded-lg">
-                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
-                 <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-[0.2em]">SYNC ACTIVE</span>
-              </div>
-              <div 
-                style={{ backgroundColor: t.primary }}
-                className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white text-[10px] shadow-sm shadow-blue-500/10 border border-white cursor-pointer hover:scale-105 transition-transform"
-              >
-                 AD
-              </div>
-           </div>
-        </header>
-
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto no-scrollbar">
-          {children}
-        </main>
       </div>
+    );
+  };
 
-      {/* 3. MOBILE INTERFACE OVERLAY */}
-      <AnimatePresence>
-        {showMobileMenu && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowMobileMenu(false)}
-              className="fixed inset-0 bg-slate-900/40 z-[100] lg:hidden"
-            />
-            <motion.aside 
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              className="fixed inset-y-0 left-0 w-64 bg-white z-[101] p-8 lg:hidden shadow-sm"
-            >
-              <div className="flex items-center justify-between mb-10">
-                <div className="flex items-center gap-3">
-                  <div style={{ backgroundColor: t.primary }} className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm shadow-blue-500/10">
-                    <Zap size={18} className="text-white fill-white" />
-                  </div>
-                  <span className="font-bold text-sm tracking-tight text-slate-900 uppercase">Admin</span>
-                </div>
-                <button onClick={() => setShowMobileMenu(false)} className="text-slate-300 p-2"><X size={24} /></button>
+  // ── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <ThemeContext.Provider value={{ dark, toggle: toggleDark }}>
+      <div className={`flex min-h-screen transition-colors duration-300 ${dark ? 'bg-slate-950 text-slate-300' : 'bg-slate-50 text-slate-700'}`}>
+
+        {/* ── Desktop Sidebar ── */}
+        <aside
+          className={`
+            hidden lg:flex flex-col border-r transition-all duration-300
+            sticky top-0 h-screen z-30
+            ${collapsed ? 'w-[72px]' : 'w-[260px]'}
+            ${dark ? 'border-slate-800' : 'border-slate-200/60'}
+          `}
+        >
+          <SidebarContent />
+          {/* Collapse toggle */}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={`
+              absolute -right-3 top-20 w-6 h-6 rounded-full border-2 flex items-center justify-center
+              transition-all z-50 shadow-md
+              ${dark
+                ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+                : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'
+              }
+            `}
+          >
+            <ChevronLeft size={12} className={`transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+          </button>
+        </aside>
+
+        {/* ── Main Content ── */}
+        <div className="flex-1 flex flex-col min-w-0">
+
+          {/* ── Top Header ── */}
+          <header
+            className={`
+              h-16 px-4 md:px-6 border-b sticky top-0 z-40 flex items-center justify-between
+              backdrop-blur-xl transition-colors duration-300
+              ${dark
+                ? 'bg-slate-900/80 border-slate-800'
+                : 'bg-white/80 border-slate-200/60'
+              }
+            `}
+          >
+            <div className="flex items-center gap-3">
+              {/* Mobile menu trigger */}
+              <button
+                onClick={() => setShowMobileMenu(true)}
+                className={`lg:hidden p-2 rounded-lg transition-colors ${dark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+              >
+                <Menu size={20} />
+              </button>
+
+              {/* Search */}
+              <div className={`
+                hidden md:flex items-center gap-2.5 rounded-xl px-3.5 py-2 w-[320px]
+                transition-all duration-200 border
+                ${searchFocused
+                  ? dark ? 'bg-slate-800 border-blue-500/40' : 'bg-white border-blue-400 ring-4 ring-blue-500/10'
+                  : dark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100/70 border-transparent'
+                }
+              `}>
+                <Search size={15} className={dark ? 'text-slate-500' : 'text-slate-400'} />
+                <input
+                  type="text"
+                  placeholder="Search users, jobs, orders..."
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  className={`
+                    bg-transparent border-none outline-none text-sm w-full font-medium
+                    ${dark ? 'text-slate-200 placeholder:text-slate-600' : 'text-slate-900 placeholder:text-slate-400'}
+                  `}
+                />
+                <kbd className={`
+                  hidden lg:flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold
+                  ${dark ? 'bg-slate-700 text-slate-400' : 'bg-white border border-slate-200 text-slate-400'}
+                `}>
+                  <Command size={9} /> K
+                </kbd>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* System status */}
+              <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider
+                ${dark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live
               </div>
 
-              <div className="space-y-2">
-                {menuItems.map((item) => (
-                  <div 
-                    key={item.path}
-                    onClick={() => { router.push(item.path); setShowMobileMenu(false); }}
-                    className={`flex items-center gap-3 p-4 rounded-xl transition-all ${
-                      pathname === item.path 
-                        ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/10' 
-                        : 'text-slate-400 hover:bg-slate-50'
-                    }`}
-                  >
-                    {item.icon}
-                    <span className="font-bold uppercase tracking-widest text-[11px]">{item.label}</span>
-                  </div>
-                ))}
+              {/* Dark mode toggle */}
+              <button
+                onClick={toggleDark}
+                className={`p-2 rounded-xl transition-all ${dark ? 'hover:bg-slate-800 text-amber-400' : 'hover:bg-slate-100 text-slate-400'}`}
+                title="Toggle Dark Mode"
+              >
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+
+              {/* Notifications */}
+              <button
+                className={`relative p-2 rounded-xl transition-all ${dark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+              >
+                <Bell size={18} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+              </button>
+
+              {/* Admin avatar */}
+              <div className={`
+                w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs cursor-pointer
+                transition-all hover:scale-105
+                bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20
+              `}>
+                AD
               </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
+            </div>
+          </header>
+
+          {/* ── Page Content ── */}
+          <main className={`flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto ${dark ? '' : ''}`}>
+            {children}
+          </main>
+        </div>
+
+        {/* ── Mobile Sidebar Overlay ── */}
+        <AnimatePresence>
+          {showMobileMenu && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowMobileMenu(false)}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] lg:hidden"
+              />
+              <motion.aside
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed inset-y-0 left-0 w-[280px] z-[101] lg:hidden shadow-2xl"
+              >
+                <SidebarContent mobile />
+                <button
+                  onClick={() => setShowMobileMenu(false)}
+                  className={`absolute top-4 right-4 p-2 rounded-lg ${dark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-400 hover:bg-slate-100'}`}
+                >
+                  <X size={20} />
+                </button>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+    </ThemeContext.Provider>
   );
 }
