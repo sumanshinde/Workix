@@ -65,7 +65,7 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 const io = new Server(server, {
   cors: {
-    origin: [CLIENT_URL, 'http://localhost:3001'],
+    origin: [CLIENT_URL, /https:\/\/.*\.onrender\.com$/],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   },
@@ -80,7 +80,7 @@ app.use(helmet({
   contentSecurityPolicy: false, 
 }));
 app.use(cors({
-  origin: [CLIENT_URL, 'http://localhost:3001'],
+  origin: [CLIENT_URL, /https:\/\/.*\.onrender\.com$/],
   credentials: true,
 }));
 app.use(express.json({ 
@@ -92,16 +92,22 @@ app.use(express.json({
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 app.use(compression());
+app.use(xss());
+app.use(mongoSanitize());
 
 // Global API Rate Limiting
 app.use('/api', apiLimiter);
 
 // Health Check
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'Healthy', 
+  const isDBConnected = mongoose.connection.readyState === 1;
+  res.status(isDBConnected ? 200 : 503).json({ 
+    status: isDBConnected ? 'Healthy' : 'Degraded', 
+    database: isDBConnected ? 'Connected' : 'Disconnected',
     timestamp: new Date().toISOString(),
+    version: '1.0.0-production',
     uptime: process.uptime(),
+    memory: process.memoryUsage(),
     env: process.env.NODE_ENV 
   });
 });
@@ -139,7 +145,7 @@ app.use('/api/platform', platformRoutes);
 app.use('/api/location', locationRoutes);
 
 app.get('/', (req, res) => {
-  res.json({ message: 'BharatGig API Cluster Operational', status: 'Healthy' });
+  res.json({ message: 'GigIndia API Cluster Operational', status: 'Healthy' });
 });
 
 // Error handling
