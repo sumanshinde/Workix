@@ -1,0 +1,30 @@
+services:
+  # Backend API Service
+  - type: web
+    name: workix-api
+    runtime: node
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        fromConfig: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        value: https://workix-1.onrender.com # Change this if frontend is hosted elsewhere
+
+  # Frontend Next.js Service
+  - type: web
+    name: workix-1
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://workix-api-cluster.onrender.com/api # Link to the backend cluster
+      - key: NODE_ENV
+        value: production
