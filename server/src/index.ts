@@ -61,7 +61,7 @@ const app = express();
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
 app.post('/api/webhooks/razorpay', handleRazorpayWebhook);
 const server = http.createServer(app);
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+const CLIENT_URL = process.env.CLIENT_URL || '';
 
 const io = new Server(server, {
   cors: {
@@ -72,7 +72,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/fiverr_clone';
+const MONGO_URI = process.env.MONGO_URI || '';
 
 // Middlewares
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -84,12 +84,12 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ 
-  limit: '10kb',
+  limit: '50mb',
   verify: (req: any, res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 app.use(compression());
 app.use(xss());

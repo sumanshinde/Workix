@@ -206,9 +206,9 @@ export default function ClientDashboard() {
               <div className="saas-card divide-y divide-gray-100">
                 {[
                   { icon: <Search size={16} />, label: 'Browse freelancers', href: '/marketplace' },
-                  { icon: <FileText size={16} />, label: 'My contracts', href: '/client/contracts' },
+                  { icon: <FileText size={16} />, label: 'My contracts', href: '/dashboard/contracts' },
                   { icon: <MessageSquare size={16} />, label: 'Messages', href: '/messages' },
-                  { icon: <TrendingUp size={16} />, label: 'Spending reports', href: '/client/reports' },
+                  { icon: <TrendingUp size={16} />, label: 'Spending reports', href: '/dashboard' },
                   { icon: <Settings size={16} />, label: 'Account settings', href: '/dashboard/settings' },
                 ].map(item => (
                   <button

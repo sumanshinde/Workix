@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CreditCard, Bell, Settings,
   LogOut, Users, Briefcase, Zap, ChevronLeft,
   Rocket, Search, Command, MessageSquare, Wallet,
-  FileText, Clock, Building
+  FileText, Clock, Building, MapPin, Megaphone
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -82,6 +82,8 @@ export default function SaaSSidebar() {
         { icon: <LayoutDashboard size={18} />, label: 'Dashboard', path: '/dashboard' },
         { icon: <MessageSquare size={18} />, label: 'Messages', path: '/dashboard/messages', badge: '2' },
         { icon: <Briefcase size={18} />, label: 'Marketplace', path: '/dashboard/marketplace' },
+        { icon: <MapPin size={18} />, label: 'Nearby Radar', path: '/nearby' },
+        { icon: <Megaphone size={18} />, label: 'Ad Campaigns', path: '/ads/dashboard' },
       ]
     },
     {

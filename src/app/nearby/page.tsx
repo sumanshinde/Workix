@@ -38,23 +38,42 @@ export default function NearbyRadarPage() {
   const handleScan = async () => {
     setIsScanning(true);
     
-    // If city or pincode provided, search from API
-    if (citySearch.trim() || pincodeSearch.trim()) {
-      try {
+    try {
+      let lat, lng;
+      
+      // Request location if city/pincode are empty
+      if (!citySearch.trim() && !pincodeSearch.trim()) {
+        const getLoc = (): Promise<GeolocationPosition> => new Promise((resolve, reject) => {
+          if (!navigator.geolocation) return reject('No geolocation');
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+        });
+        
+        try {
+          const position = await getLoc();
+          lat = position.coords.latitude;
+          lng = position.coords.longitude;
+        } catch (e) {
+          console.warn("Could not get user location. Falling back to mock.");
+        }
+      }
+
+      if (citySearch.trim() || pincodeSearch.trim() || (lat && lng)) {
         const apiResults = await adsAPI.getNearby({
           city: citySearch.trim() || undefined,
           pincode: pincodeSearch.trim() || undefined,
+          lat,
+          lng
         });
+
         if (Array.isArray(apiResults) && apiResults.length > 0) {
-          // Map API results to display format
           const mapped = apiResults.map((u: any, i: number) => ({
-            _id: u._id,
+            _id: u._id || String(i),
             name: u.name,
-            category: u.skills?.[0] || 'Freelancer',
+            category: u.skills?.[0] || 'Operator',
             distance: Math.round(Math.random() * radius),
             rating: u.rating || 4.5,
-            skills: u.skills?.slice(0, 3) || [],
-            avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=3b82f6&color=fff`,
+            skills: u.skills?.slice(0, 3) || ['Verified'],
+            avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=1e40af&color=fff`,
             isOnline: true,
             lastActive: 'Now',
             city: u.city || '',
@@ -64,13 +83,16 @@ export default function NearbyRadarPage() {
           setIsScanning(false);
           return;
         }
-      } catch {}
+      }
+    } catch (e) {
+      console.error(e);
     }
     
+    // Fallback to MOCK data if API fails or returns empty
     setTimeout(() => {
       setResults(MOCK_NEARBY);
       setIsScanning(false);
-    }, 2000);
+    }, 1500);
   };
 
   return (
@@ -294,7 +316,7 @@ export default function NearbyRadarPage() {
                       </div>
 
                       <button className="h-12 px-6 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase tracking-widest text-[11px] shadow-xl shadow-blue-900/40 flex items-center gap-2 group-hover:scale-105 transition-all">
-                         Hage Target <ArrowUpRight size={14} />
+                         Engage Target <ArrowUpRight size={14} />
                       </button>
                    </div>
                 </motion.div>

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { adminAPI } from '@/services/api';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function AdminMessagesPage() {
   const [messages, setMessages] = useState<any[]>([]);

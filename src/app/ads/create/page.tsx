@@ -167,12 +167,12 @@ export default function CreateAdPage() {
             >
               <div className="lg:col-span-8 space-y-10">
                 <div className="space-y-4">
-                   <h1 className="text-4xl font-black text-slate-900 tracking-tight">Post Requirement</h1>
-                   <p className="text-slate-500 font-medium">Create a high-impact requirement post directly targeting top pros.</p>
+                   <h1 className="text-4xl font-black text-slate-900 tracking-tight">Create Ad Campaign</h1>
+                   <p className="text-slate-500 font-medium">Create a high-impact ad campaign to promote your profile or business.</p>
                 </div>
 
                 {/* Ad Type Selection */}
-                <div className="hidden grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {AD_TYPES.map(type => (
                     <button
                       key={type.id}
@@ -411,7 +411,7 @@ export default function CreateAdPage() {
                                className="px-8 py-4 rounded-2xl font-bold bg-purple-600 text-white shadow-xl shadow-purple-600/20 hover:scale-105 transition-all flex flex-1 sm:flex-none justify-center items-center gap-2 whitespace-nowrap"
                             >
                                {loading ? <Loader2 size={20} className="animate-spin" /> : <Zap size={20} />}
-                               5. Post Ads / Requirement
+                               5. Launch Ad Campaign
                             </button>
                          </div>
                       </div>
@@ -453,8 +453,8 @@ export default function CreateAdPage() {
                      <CheckCircle2 size={56} />
                   </div>
                   <div className="space-y-4">
-                     <h2 className="text-5xl font-black text-slate-900 tracking-tighter leading-none">Requirement Live! 🚀</h2>
-                     <p className="text-slate-500 font-semibold text-lg max-w-sm mx-auto">Your post is deployed to the marketplace. Top professionals will see it instantly.</p>
+                     <h2 className="text-5xl font-black text-slate-900 tracking-tighter leading-none">Ad Campaign Live! 🚀</h2>
+                     <p className="text-slate-500 font-semibold text-lg max-w-sm mx-auto">Your ad campaign is actively running. Target clients will see it instantly.</p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                      <Button onClick={() => router.push('/dashboard')} className="px-10 py-8 rounded-3xl bg-slate-900 text-white font-bold shadow-xl shadow-slate-900/20 hover:-translate-y-1 transition-all leading-none">

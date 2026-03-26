@@ -2,8 +2,7 @@ import { getSession } from 'next-auth/react';
 
 // Central API client for GigIndia frontend ↔ backend communication
 // Backend base URL — change to your deployment URL in production
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
+const BASE = `${process.env.NEXT_PUBLIC_API_URL}/api`;
 // ── Helper ───────────────────────────────────────────────────────────────────
 const getToken = async () => {
   if (typeof window === 'undefined') return '';
@@ -217,7 +216,7 @@ export const analyticsAPI = {
   getMonthly: (startDate: string, endDate: string) => 
     request(`/reports/monthly?startDate=${startDate}&endDate=${endDate}`),
   getExportUrl: (type: string, startDate: string, endDate: string) => 
-    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/reports/export/${type}?startDate=${startDate}&endDate=${endDate}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/api/reports/export/${type}?startDate=${startDate}&endDate=${endDate}`,
 };
 
 // ── Subscriptions ────────────────────────────────────────────────────────────
