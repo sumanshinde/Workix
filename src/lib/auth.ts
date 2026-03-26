@@ -6,26 +6,32 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId:     process.env.GOOGLE_CLIENT_ID     ?? '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-      authorization: {
-        params: {
-          scope: 'openid email profile',
-          prompt: 'consent',
-          access_type: 'offline'
-        }
-      }
-    }),
-    GitHubProvider({
-      clientId:     process.env.GITHUB_CLIENT_ID     ?? '',
-      clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
-    }),
-    LinkedInProvider({
-      clientId:     process.env.LINKEDIN_CLIENT_ID     ?? '',
-      clientSecret: process.env.LINKEDIN_CLIENT_SECRET ?? '',
-      authorization: { params: { scope: 'openid profile email' } },
-    }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CLIENT_ID !== 'your-google-client-id'
+      ? [GoogleProvider({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          authorization: {
+            params: {
+              scope: 'openid email profile',
+              prompt: 'consent',
+              access_type: 'offline'
+            }
+          }
+        })]
+      : []),
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET && process.env.GITHUB_CLIENT_ID !== 'your-github-client-id'
+      ? [GitHubProvider({
+          clientId: process.env.GITHUB_CLIENT_ID,
+          clientSecret: process.env.GITHUB_CLIENT_SECRET,
+        })]
+      : []),
+    ...(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET && process.env.LINKEDIN_CLIENT_ID !== 'your-linkedin-client-id'
+      ? [LinkedInProvider({
+          clientId: process.env.LINKEDIN_CLIENT_ID,
+          clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+          authorization: { params: { scope: 'openid profile email' } },
+        })]
+      : []),
     CredentialsProvider({
       name: 'Email',
       credentials: {
@@ -125,5 +131,5 @@ export const authOptions: NextAuthOptions = {
   },
   pages:   { signIn: '/login', error: '/login' },
   session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
-  secret:  process.env.NEXTAUTH_SECRET,
+  secret:  process.env.NEXTAUTH_SECRET || 'bharatgig-secret-key-change-in-production-32chars',
 };

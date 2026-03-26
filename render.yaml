@@ -26,5 +26,9 @@ services:
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://workix-api-cluster.onrender.com/api
+      - key: NEXTAUTH_URL
+        value: https://workix-1.onrender.com
+      - key: NEXTAUTH_SECRET
+        value: change_me_to_random_secret_32chars
       - key: NODE_ENV
         value: production
