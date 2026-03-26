@@ -35,19 +35,11 @@ export default function WalletDashboard() {
     'GBP': { symbol: <PoundSterling size={20} />, rate: 0.009 }
   };
 
-  const handleWithdraw = async () => {
-    const amount = prompt('Enter amount to withdraw:');
-    if (!amount) return;
-    setWithdrawing(true);
-    try {
-      await paymentsAPI.withdraw({ amount: parseFloat(amount) });
-      await fetchWallet();
-      alert('Withdrawal initiated successfully!');
-    } catch (err) {
-      alert('Withdrawal failed');
-    } finally {
-      setWithdrawing(false);
-    }
+  const handleWithdraw = () => {
+    // Navigate to the newly built GigIndia withdraw page
+    const router = require('next/navigation').useRouter;
+    // But wait, router is already in scope? Need to check. Let's just use window.location.href for simplicity inside a component if router is not initialized in the body. Wait, `useRouter()` must be inside a component rendering phase.
+    window.location.href = '/dashboard/withdraw';
   };
 
   if (loading) return <Skeleton className="h-96 w-full rounded-[2.5rem]" />;
@@ -72,7 +64,7 @@ export default function WalletDashboard() {
                       <div className="flex items-center gap-2 text-white/40 font-black text-[10px] uppercase tracking-[0.2em]">
                          <Globe size={14} /> Global Wallet
                       </div>
-                      <h3 className="text-2xl font-black text-white italic">BHARATGIG PAY</h3>
+                      <h3 className="text-2xl font-black text-white italic">GigIndia PAY</h3>
                    </div>
                    
                    <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10">
@@ -149,7 +141,7 @@ export default function WalletDashboard() {
                 </div>
                 <div className="relative z-10 space-y-2">
                    <div className="text-[8px] font-black text-white/60 uppercase tracking-widest">Automatic Payouts</div>
-                   <h4 className="text-lg font-black uppercase italic italic">BHARATGIG PRO</h4>
+                   <h4 className="text-lg font-black uppercase italic italic">GigIndia PRO</h4>
                    <p className="text-[10px] font-medium text-blue-100 leading-relaxed uppercase tracking-wide">Instant withdrawal settlement enabled for pro users.</p>
                 </div>
              </Card>

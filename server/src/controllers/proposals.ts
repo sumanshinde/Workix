@@ -25,7 +25,7 @@ export const submitProposal = async (req: Request, res: Response) => {
     const creditCost = user.subscriptionStatus === 'pro' ? 0 : 2; 
     
     if (user.availableCredits < creditCost) {
-      return res.status(403).json({ message: 'Insufficient bidding credits. Upgrade to BharatGig Pro.' });
+      return res.status(403).json({ message: 'Insufficient bidding credits. Upgrade to GigIndia Pro.' });
     }
 
     // Deduct credits

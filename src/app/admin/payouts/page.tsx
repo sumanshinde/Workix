@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, ArrowUpRight, ArrowDownRight, 
   Clock, CheckCircle2, XCircle, DollarSign,
@@ -8,16 +8,44 @@ import {
   ChevronRight, Search
 } from 'lucide-react';
 import { Button } from '@/components/ui';
-
-const DUMMY_PAYOUTS = [
-  { id: '1', freelancer: 'Aditya Sharma', amount: '₹12,400', method: 'Bank Transfer', status: 'Pending', requested: '3 hours ago' },
-  { id: '2', freelancer: 'Priya Singh', amount: '₹8,500', method: 'UPI', status: 'Completed', requested: '5 hours ago' },
-  { id: '3', freelancer: 'Rahul Gupta', amount: '₹22,000', method: 'Bank Transfer', status: 'Processing', requested: '12 hours ago' },
-  { id: '4', freelancer: 'Sonal Verma', amount: '₹4,200', method: 'UPI', status: 'Pending', requested: '1 day ago' },
-];
+import { adminAPI } from '@/services/api';
 
 export default function PayoutsPage() {
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    fetchPayouts();
+  }, []);
+
+  const fetchPayouts = async () => {
+    try {
+      setLoading(true);
+      const res = await adminAPI.getPayoutRequests();
+      if (res) setPayouts(res);
+    } catch (err) {
+      console.error('Failed to fetch payouts', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAction = async (requestId: string, action: 'approve' | 'reject') => {
+    const reason = action === 'reject' ? prompt('Enter rejection reason:') || 'Rejection reason not provided' : undefined;
+    if (action === 'reject' && !reason) return;
+
+    try {
+      await adminAPI.processPayout({ requestId, action, adminNotes: reason });
+      alert(`Payout ${action}d successfully`);
+      fetchPayouts();
+    } catch (err) {
+      alert(`Failed to ${action} payout`);
+    }
+  };
+
+  const totalPayouts = payouts.filter(p => p.status === 'processed').reduce((s, p) => s + (p.amount || 0), 0) / 100;
+  const pendingPayouts = payouts.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount || 0), 0) / 100;
 
   return (
     <div className="p-8 lg:p-12 space-y-8 max-w-7xl mx-auto">
@@ -47,20 +75,16 @@ export default function PayoutsPage() {
               </div>
               <div>
                  <p className="text-gray-500 font-bold uppercase tracking-wider text-xs mb-2">Total Settlement Volume</p>
-                 <h2 className="text-5xl font-bold text-gray-900 tracking-tight">₹4.2 Cr</h2>
+                 <h2 className="text-5xl font-bold text-gray-900 tracking-tight">₹{(totalPayouts / 100000).toFixed(2)}L</h2>
               </div>
-              <div className="grid grid-cols-3 gap-8 pt-4 border-t border-gray-100">
+              <div className="grid grid-cols-2 gap-8 pt-4 border-t border-gray-100">
                  <div>
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Yield</p>
-                    <p className="text-lg font-bold text-gray-900">₹8.4L</p>
+                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Fee Yield (Est)</p>
+                    <p className="text-lg font-bold text-gray-900">₹{(totalPayouts * 0.1 / 1000).toFixed(1)}K</p>
                  </div>
                  <div>
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Escrowed</p>
-                    <p className="text-lg font-bold text-gray-900">₹1.2 Cr</p>
-                 </div>
-                 <div>
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Payouts Output</p>
-                    <p className="text-lg font-bold text-gray-900">₹2.8 Cr</p>
+                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Pending Outflow</p>
+                    <p className="text-lg font-bold text-gray-900">₹{(pendingPayouts / 1000).toFixed(1)}K</p>
                  </div>
               </div>
            </div>
@@ -101,14 +125,13 @@ export default function PayoutsPage() {
                 />
              </div>
           </div>
-          <div className="flex gap-3">
-             <button className="p-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-gray-900 rounded-lg transition-colors"><Filter size={18} /></button>
-          </div>
         </div>
         
         <div className="overflow-x-auto">
-          {DUMMY_PAYOUTS.length === 0 ? (
-             <div className="p-10 text-center text-gray-500 font-medium">
+          {loading ? (
+             <div className="p-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">Synchronizing Cashflows...</div>
+          ) : payouts.length === 0 ? (
+             <div className="p-10 text-center text-gray-500 font-medium text-xs">
                 No transactions yet.
              </div>
           ) : (
@@ -117,35 +140,29 @@ export default function PayoutsPage() {
                  <tr className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-200">
                    <th className="px-6 py-4">Freelancer</th>
                    <th className="px-6 py-4">Amount</th>
-                   <th className="px-6 py-4">Method</th>
                    <th className="px-6 py-4">Status</th>
                    <th className="px-6 py-4">Date</th>
                    <th className="px-6 py-4 text-right">Actions</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-gray-100 text-sm">
-                 {DUMMY_PAYOUTS.map((payout) => (
-                   <tr key={payout.id} className="group hover:bg-gray-50/50 transition-colors">
+                 {payouts.map((payout) => (
+                   <tr key={payout._id} className="group hover:bg-gray-50/50 transition-colors">
                      <td className="px-6 py-4">
                        <div>
-                         <p className="text-gray-900 font-bold text-sm truncate">{payout.freelancer}</p>
-                         <p className="text-xs text-gray-500 font-medium">Verified User</p>
+                         <p className="text-gray-900 font-bold text-sm truncate">{payout.userId?.name || 'Unknown'}</p>
+                         <p className="text-xs text-gray-500 font-medium">{payout.userId?.email}</p>
                        </div>
                      </td>
                      <td className="px-6 py-4 text-xl font-bold text-gray-900 tracking-tight">
-                       {payout.amount}
+                       ₹{(payout.amount / 100).toLocaleString()}
                      </td>
                      <td className="px-6 py-4">
-                       <div className="flex items-center gap-3 text-gray-600 font-medium text-sm">
-                          <CreditCard size={16} className="text-blue-500" />
-                          {payout.method}
-                       </div>
-                     </td>
-                     <td className="px-6 py-4">
-                       <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${
-                         payout.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                         payout.status === 'Processing' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                         'bg-amber-50 text-amber-700 border border-amber-100'
+                       <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border ${
+                         payout.status === 'processed' || payout.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                         payout.status === 'processing' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                         payout.status === 'rejected' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                         'bg-amber-50 text-amber-700 border-amber-100'
                        }`}>
                          {payout.status}
                        </div>
@@ -153,14 +170,14 @@ export default function PayoutsPage() {
                      <td className="px-6 py-4">
                        <div className="flex items-center gap-3 text-gray-500 font-medium text-xs">
                           <Clock size={14} className="text-gray-400" />
-                          {payout.requested}
+                          {new Date(payout.createdAt).toLocaleDateString()}
                        </div>
                      </td>
                      <td className="px-6 py-4 text-right">
-                       {payout.status === 'Pending' ? (
+                       {payout.status === 'pending' ? (
                          <div className="flex items-center justify-end gap-3">
-                            <button className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition-colors">Approve</button>
-                            <button className="px-3 py-1.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 font-semibold text-xs rounded-lg transition-colors">Reject</button>
+                            <button onClick={() => handleAction(payout._id, 'approve')} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[10px] uppercase rounded-lg transition-colors">Approve</button>
+                            <button onClick={() => handleAction(payout._id, 'reject')} className="px-3 py-1.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 font-semibold text-[10px] uppercase rounded-lg transition-colors">Reject</button>
                          </div>
                        ) : (
                           <div className="flex justify-end pr-2">

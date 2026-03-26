@@ -9,7 +9,7 @@ export const captureLead = async (req: Request, res: Response) => {
     const lead = await Lead.create({ name, email, company, requirement, source });
 
     // 2. Mock Auto-Action: Send Welcome Email
-    console.log(`[EMAIL] To: ${email} - Welcome to BharatGig! Our growth team will reach out.`);
+    console.log(`[EMAIL] To: ${email} - Welcome to GigIndia! Our growth team will reach out.`);
 
     res.status(201).json({ success: true, message: 'Lead captured', lead });
   } catch (err: any) {

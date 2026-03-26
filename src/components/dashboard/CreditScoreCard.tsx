@@ -46,7 +46,7 @@ export default function CreditScoreCard() {
           <div className="flex items-center justify-between">
              <div className="flex items-center gap-2">
                 <Crown size={20} className="text-white/80" />
-                <h3 className="text-xl font-black italic tracking-tight">BHARATGIG TRUST SCORE</h3>
+                <h3 className="text-xl font-black italic tracking-tight">GigIndia TRUST SCORE</h3>
              </div>
              <div className="px-5 py-1.5 bg-white/20 backdrop-blur-md rounded-full border border-white/20 text-[10px] font-black uppercase tracking-widest shadow-lg">
                 Tier: {data.level}

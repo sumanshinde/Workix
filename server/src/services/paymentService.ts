@@ -41,24 +41,30 @@ export const createRazorpayOrder = async (amount: number, receipt: string, notes
     notes: notes
   };
 
-  // Graceful fallback for local dev if missing actual keys
-  if (!process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID.includes('your_razorpay_key') || process.env.RAZORPAY_KEY_ID.includes('dummy')) {
+  // If no valid keys are provided, mock the order creation so local testing works without crashing
+  const keyId = process.env.RAZORPAY_KEY_ID || '';
+  if (!keyId || keyId === 'your_razorpay_key' || keyId === 'rzp_test_placeholder') {
     return {
-      id: `order_mock_${Date.now()}`,
-      entity: "order",
-      amount: options.amount,
-      amount_paid: 0,
-      amount_due: options.amount,
-      currency: "INR",
-      receipt: receipt,
-      status: "created",
-      attempts: 0,
-      notes: notes,
-      created_at: Math.floor(Date.now() / 1000)
+       id: `order_mock_${Date.now()}`,
+       entity: 'order',
+       amount: options.amount,
+       currency: 'INR',
+       receipt: options.receipt,
+       status: 'created',
+       attempts: 0,
+       created_at: Math.floor(Date.now() / 1000)
     };
   }
 
+  // PRODUCTION: Directly call Razorpay. Ensure env keys are set.
   return await razorpay.orders.create(options);
+};
+
+export const fetchRazorpayOrder = async (orderId: string) => {
+  if (orderId.startsWith('order_mock_')) {
+    return { id: orderId, notes: {} };
+  }
+  return await razorpay.orders.fetch(orderId);
 };
 
 /**
@@ -97,11 +103,8 @@ export const verifyPaymentSignature = (
   paymentId: string,
   signature: string
 ) => {
-  // Graceful fallback for local dev & testing
-  if (signature === 'demo_signature') return true;
-
   const generated_signature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret')
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
     .update(orderId + '|' + paymentId)
     .digest('hex');
 

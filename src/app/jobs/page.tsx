@@ -66,17 +66,18 @@ export default function JobsPage() {
          <div className="flex items-center gap-10">
             {/* Logo */}
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => router.push('/')}>
-               <div className="w-10 h-10-lg shadow-sm shadow-blue-500/30 group-hover:rotate-6 transition-transform">
-                  {BRANDING.shortName}
+               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-extrabold text-[15px] shadow-sm shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                  GI
                </div>
-               <span className="font-semibold text-2xl tracking-tight text-gray-900 leading-none uppercase">BharatGig</span>
+               <span className="font-extrabold text-xl text-slate-900 tracking-tight">GigIndia</span>
             </div>
 
             {/* Desktop Menu */}
             <div className="hidden lg:flex items-center gap-10">
-               <a href="/jobs" className="text-xs font-bold uppercase tracking-widest text-blue-600 border-b-2 border-blue-600 pb-1 transition-all">Find Jobs</a>
-               <a href="/marketplace" className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors">Browse Gigs</a>
-               <a href="/dashboard" className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors">Job Center</a>
+               <a href="/jobs" className="text-xs font-bold uppercase tracking-widest text-blue-600 border-b-2 border-blue-600 pb-1 transition-all">Find Work</a>
+               <a href="/marketplace" className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors">Find Talent</a>
+               <a href="/pricing" className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors">Pricing</a>
+               <a href="/admin/dashboard" className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors">Admin Panel</a>
             </div>
          </div>
 
@@ -128,7 +129,7 @@ export default function JobsPage() {
                      gig <br /><span className="text-blue-600">Control.</span>
                   </h1>
                   <p className="text-gray-400 font-bold text-sm leading-relaxed max-w-xl uppercase tracking-tight opacity-80">
-                     Provision elite technical mandates and strategic initiatives within the BharatGig federation.
+                     Provision elite technical mandates and strategic initiatives within the GigIndia federation.
                   </p>
                </div>
 
@@ -307,7 +308,7 @@ export default function JobsPage() {
       <footer className="py-24 border-t border-gray-100 bg-[#f9fafb] opacity-80">
         <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
           <div className="flex items-center gap-6">
-             <div className="w-10 h-10-lg font-bold">B</div>
+             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold">GI</div>
              <span className="text-[11px] font-bold uppercase tracking-[0.4em] text-gray-900 leading-none">{BRANDING.name} Federation Registry</span>
           </div>
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400">© 2026 NEXUS PROTOCOL v4.5.0-STABLE.AUTH</p>

@@ -33,8 +33,18 @@ export default function ReceivePaymentsPage() {
   const [linkGenerated, setLinkGenerated] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [amount, setAmount] = useState<number | string>(1500);
+  const [user, setUser] = useState<any>(null);
 
-  const paymentLink = 'https://pay.bharatgig.in/arjun-mehra/1500';
+  React.useEffect(() => {
+    const rawUser = localStorage.getItem('user');
+    if (rawUser) {
+      setUser(JSON.parse(rawUser));
+    }
+  }, []);
+
+  const userNameSlug = user?.name ? user.name.toLowerCase().replace(/\s+/g, '-') : 'user';
+  const paymentLink = `${typeof window !== 'undefined' ? window.location.origin : 'https://pay.gigindia.in'}/${userNameSlug}/${amount}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(paymentLink);
@@ -128,7 +138,8 @@ export default function ReceivePaymentsPage() {
                 <input
                   type="number"
                   placeholder="Enter amount"
-                  defaultValue={1500}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-semibold"
                 />
               </div>
@@ -184,7 +195,7 @@ export default function ReceivePaymentsPage() {
                 <div className="space-y-4 flex-1">
                   <div className="p-4 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">UPI ID</p>
-                    <p className="text-white font-bold text-sm">arjun@bharatgig</p>
+                    <p className="text-white font-bold text-sm">arjun@GigIndia</p>
                   </div>
                   <div className="p-4 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Account</p>

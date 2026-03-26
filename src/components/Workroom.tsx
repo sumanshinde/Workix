@@ -89,7 +89,7 @@ export default function Workroom() {
         <div className="glass-card" style={{ padding: '24px', background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(99, 102, 241, 0.1))' }}>
           <h4 style={{ fontSize: '14px', color: 'var(--accent)', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}>Escrow Status</h4>
           <div style={{ fontSize: '24px', fontWeight: 800, marginBottom: '4px' }}>₹40,000</div>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Held securely in BharatGig Escrow</p>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Held securely in GigIndia Escrow</p>
         </div>
       </div>
     </div>

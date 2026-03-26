@@ -1,19 +1,20 @@
 import { Router } from 'express';
 import { register, login, googleLogin, logout, sendOTP, verifyOTP } from '../controllers/auth';
 import { protect } from '../middleware/auth';
+import { authLimiter } from '../middleware/rateLimiter';
 import User from '../models/User';
 
 const router = Router();
 
 // Public
-router.post('/register',  register);
-router.post('/login',     login);
-router.post('/google',    googleLogin);
-router.get('/logout',     logout);
+router.post('/register',   authLimiter, register);
+router.post('/login',      authLimiter, login);
+router.post('/google',     authLimiter, googleLogin);
+router.get('/logout',      logout);
 
 // OTP Auth (Mobile-First)
-router.post('/otp/send',   sendOTP);
-router.post('/otp/verify', verifyOTP);
+router.post('/otp/send',   authLimiter, sendOTP);
+router.post('/otp/verify', authLimiter, verifyOTP);
 
 
 // Protected — get current user
@@ -47,7 +48,7 @@ router.get('/profile/:id', async (req, res) => {
       await createNotification(
         user._id,
         '👀 New Profile View',
-        'A potential client just viewed your BharatGig profile. Keep it updated!',
+        'A potential client just viewed your GigIndia profile. Keep it updated!',
         'profile_view',
         '/profile/me'
       );

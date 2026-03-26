@@ -54,7 +54,7 @@ export default function DisputeCenter() {
                    </div>
                    <h1 className="text-3xl font-black text-slate-900 tracking-tight italic">DISPUTE CENTER</h1>
                 </div>
-                <p className="text-sm font-medium text-slate-500 uppercase tracking-widest">Case ID: <span className="text-slate-900">#BG-{(id as string)?.slice(0, 8).toUpperCase()}</span></p>
+                <p className="text-sm font-medium text-slate-500 uppercase tracking-widest">Case ID: <span className="text-slate-900">#GIG-{(id as string)?.slice(0, 8).toUpperCase()}</span></p>
              </div>
              
              <div className="flex items-center gap-3">
@@ -173,7 +173,7 @@ export default function DisputeCenter() {
                                  <CheckCircle2 size={24} className="text-emerald-500" />
                                  {dispute.resolution === 'refund' ? "Total Refund to Client" : dispute.resolution === 'release' ? "Total Milestone Release" : "Partial Split Settlement"}
                               </div>
-                              <p className="text-xs font-semibold text-emerald-700/70 italic">Verified by AI Conciliation Engine and finalized by BharatGig Operations.</p>
+                              <p className="text-xs font-semibold text-emerald-700/70 italic">Verified by AI Conciliation Engine and finalized by GigIndia Operations.</p>
                            </Card>
                         </div>
                       )}

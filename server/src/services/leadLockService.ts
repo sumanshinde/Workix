@@ -17,7 +17,7 @@ export const LeadLockService = {
     const user = await User.findById(freelancerId);
     if (!user) throw new Error('User not found');
 
-    // Skip deduction for BharatGig Pro users or Admins
+    // Skip deduction for GigIndia Pro users or Admins
     if (user.subscriptionStatus === 'pro' || user.role === 'admin') {
       console.log(`[LEAD_LOCK] Skipping credit deduction for Pro/Admin user ${freelancerId}`);
       return;

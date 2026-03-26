@@ -136,7 +136,7 @@ export default function AppMarketplace() {
                  <Globe size={32} />
               </div>
               <h2 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">Become a Solution Forge Partner</h2>
-              <p className="max-w-xl text-white/50 font-medium">Sell your high-end app architectures to global clients and earn 100% revenue. Join the BharatGig elite developer circle.</p>
+              <p className="max-w-xl text-white/50 font-medium">Sell your high-end app architectures to global clients and earn 100% revenue. Join the GigIndia elite developer circle.</p>
               <Button className="h-16 px-12 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs hover:bg-blue-600 hover:text-white transition-all">Apply to Forge <ArrowRight className="ml-2" /> </Button>
            </Card>
         </section>

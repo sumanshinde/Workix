@@ -26,7 +26,7 @@ export default function MilestoneTracker({ milestones: initialMilestones, isClie
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
         amount: rzpOrder.amount,
         currency: 'INR',
-        name: 'BharatGig Escrow',
+        name: 'GigIndia Escrow',
         description: 'Funding Milestone',
         order_id: rzpOrder.id,
         handler: async function (response: any) {

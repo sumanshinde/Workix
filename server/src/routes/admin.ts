@@ -1,5 +1,6 @@
 import express from 'express';
 import { getActivityLogs, getMessages, getUserActivities, getDashboardStats, getAllDisputes, resolveDisputeFinal } from '../controllers/admin';
+import { getAdminPayoutRequests, adminProcessPayout } from '../controllers/payouts';
 import { protect, authorize } from '../middleware/auth';
 
 const router = express.Router();
@@ -11,5 +12,8 @@ router.get('/dashboard/stats', protect, authorize(['admin']), getDashboardStats)
 
 router.get('/disputes', protect, authorize(['admin']), getAllDisputes);
 router.post('/disputes/resolve', protect, authorize(['admin']), resolveDisputeFinal);
+
+router.get('/payouts', protect, authorize(['admin']), getAdminPayoutRequests);
+router.post('/payouts/process', protect, authorize(['admin']), adminProcessPayout);
 
 export default router;

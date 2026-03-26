@@ -1,6 +1,6 @@
-# BharatGig | The AI-First Freelancing Ecosystem
+# GigIndia | The AI-First Freelancing Ecosystem
 
-BharatGig is a production-grade, end-to-end platform designed to empower the next generation of digital talent. Built with a robust **Next.js 14+** frontend and a high-performance **Express API Cluster**, it optimizes the entire gig lifecycle from hiring to secure payout.
+GigIndia is a production-grade, end-to-end platform designed to empower the next generation of digital talent. Built with a robust **Next.js 14+** frontend and a high-performance **Express API Cluster**, it optimizes the entire gig lifecycle from hiring to secure payout.
 
 ---
 
@@ -81,4 +81,4 @@ const { variant, trackConversion } = useExperiment('new-checkout-cta');
 ## 🛡️ Maintainer & Support
 Developed for global scale by the **Workix Engineering Team**.
 
-`BharatGig 2026. Production-Ready Edition.`
+`GigIndia 2026. Production-Ready Edition.`

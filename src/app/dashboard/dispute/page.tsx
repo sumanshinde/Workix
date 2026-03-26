@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, Upload, MessageSquare, Info, Shield, CheckCircle, ArrowLeft } from 'lucide-react';
+import { disputesAPI } from '@/services/api';
 
 export default function RaiseDisputePage() {
   const searchParams = useSearchParams();
@@ -25,24 +26,20 @@ export default function RaiseDisputePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     setLoading(true);
     
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/disputes/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          escrowId,
-          raisedBy: user.id,
-          reason: formData.reason,
-          description: formData.description,
-          evidence: formData.evidenceLinks.split(',').map(s => s.trim())
-        })
+      await disputesAPI.create({
+        escrowId,
+        raisedBy: user.id,
+        reason: formData.reason,
+        description: formData.description,
+        evidence: formData.evidenceLinks.split(',').map(s => s.trim())
       });
-      
-      if (res.ok) setSuccess(true);
+      setSuccess(true);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to raise dispute:', err);
     }
     setLoading(false);
   };
@@ -140,7 +137,7 @@ export default function RaiseDisputePage() {
                 <h4 style={{ fontSize: '16px', fontWeight: 700 }}>Our Process</h4>
               </div>
               <ul style={{ paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                <li>Funds are frozen immediately and held by BharatGig.</li>
+                <li>Funds are frozen immediately and held by GigIndia.</li>
                 <li>Both parties are asked for additional evidence if needed.</li>
                 <li>Admin will resolve the case within 48 hours.</li>
                 <li>Decisions are final and based on platform terms.</li>

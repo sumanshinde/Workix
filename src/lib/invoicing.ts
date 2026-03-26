@@ -17,7 +17,7 @@ export interface GSTBreakdown {
 }
 
 /**
- * BharatGig GST & Commission Logic
+ * GigIndia GST & Commission Logic
  * Calculates split payments and GST breakdown for freelancers and clients.
  */
 export function calculateGSTAndCommission(params: InvoiceParams): GSTBreakdown {

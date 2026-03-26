@@ -8,15 +8,19 @@ import {
   Sparkles, ShieldCheck, Zap,
   TrendingUp, Users, DollarSign
 } from 'lucide-react';
-import { Job } from '@/types';
 import { useRouter } from 'next/navigation';
 
 export const MarketplaceJobCard = ({ job, index }: { job: any, index: number }) => {
   const router = useRouter();
 
   return (
-    <div
-      className="bg-white border border-[#e5e7eb] rounded-xl p-6 transition-all shadow-sm hover:shadow-md hover:border-blue-200 group relative"
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="bg-white border border-slate-100 rounded-2xl p-6 transition-all shadow-sm hover:shadow-xl hover:shadow-blue-500/[0.08] hover:border-blue-200 group relative cursor-pointer"
+      onClick={() => router.push(`/jobs/${job._id}`)}
     >
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Side: Job Details */}
@@ -42,10 +46,7 @@ export const MarketplaceJobCard = ({ job, index }: { job: any, index: number }) 
           </div>
 
           <div className="space-y-1.5">
-            <h3 
-              onClick={() => router.push(`/jobs/${job._id}`)}
-              className="text-sm font-bold text-[#111827] cursor-pointer hover:text-blue-600 transition-colors line-clamp-1"
-            >
+            <h3 className="text-sm font-bold text-[#111827] cursor-pointer hover:text-blue-600 transition-colors line-clamp-1">
               {job.title}
             </h3>
             <p className="text-[#4b5563] text-sm leading-relaxed line-clamp-2">
@@ -71,7 +72,7 @@ export const MarketplaceJobCard = ({ job, index }: { job: any, index: number }) 
 
           <div className="space-y-3">
              <button 
-               onClick={() => router.push(`/jobs/${job._id}`)}
+               onClick={(e) => { e.stopPropagation(); router.push(`/jobs/${job._id}`); }}
                className="w-full h-10 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-3 group/btn shadow-sm"
              >
                 View Job
@@ -83,6 +84,6 @@ export const MarketplaceJobCard = ({ job, index }: { job: any, index: number }) 
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

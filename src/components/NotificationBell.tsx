@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Check, ExternalLink, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { notificationsAPI } from '@/services/api';
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -10,27 +11,27 @@ export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.id) {
-      fetchNotifications(user.id);
-    }
+    fetchNotifications();
   }, []);
 
-  const fetchNotifications = async (userId: string) => {
+  const fetchNotifications = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/notifications/${userId}`);
-      const data = await res.json();
-      setNotifications(data);
-      setUnreadCount(data.filter((n: any) => !n.isRead).length);
+      const data = await notificationsAPI.getAll();
+      setNotifications(data || []);
+      setUnreadCount(data ? data.filter((n: any) => !n.isRead).length : 0);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch notifications:', err);
     }
   };
 
   const handleMarkAsRead = async (id: string) => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/notifications/${id}/read`, { method: 'PUT' });
-    setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
-    setUnreadCount(unreadCount - 1);
+    try {
+      await notificationsAPI.markRead(id);
+      setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(Math.max(0, unreadCount - 1));
+    } catch (err) {
+      console.error('Failed to mark read:', err);
+    }
   };
 
   return (

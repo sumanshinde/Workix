@@ -114,7 +114,7 @@ export default function HireLandingPage() {
            <div className="max-w-3xl mx-auto text-center space-y-10">
               <div className="w-16 h-1 bg-blue-600 mx-auto rounded-lg" />
                <p className="text-2xl md:text-3xl font-bold text-[#111827] leading-snug">
-                 &quot;BharatGig simplified our hiring process for 3 critical roles. The talent quality and payment security are unmatched in India.&quot;
+                 &quot;GigIndia simplified our hiring process for 3 critical roles. The talent quality and payment security are unmatched in India.&quot;
                </p>
                <div className="flex items-center justify-center gap-4">
                   <div className="w-12 rounded-lg bg-blue-100" />

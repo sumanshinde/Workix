@@ -91,7 +91,7 @@ export const exportCSV = async (req: Request, res: Response) => {
     const csv = parser.parse(transactions);
 
     res.header('Content-Type', 'text/csv');
-    res.attachment(`BharatGig_Financial_Report_${startDate}_to_${endDate}.csv`);
+    res.attachment(`GigIndia_Financial_Report_${startDate}_to_${endDate}.csv`);
     return res.send(csv);
   } catch (err) {
     res.status(500).json({ message: 'CSV export failed', error: err });
@@ -125,11 +125,11 @@ export const exportPDF = async (req: Request, res: Response) => {
 
     const doc = new PDFDocument({ margin: 50 });
     res.header('Content-Type', 'application/pdf');
-    res.attachment(`BharatGig_Report_${startDate}.pdf`);
+    res.attachment(`GigIndia_Report_${startDate}.pdf`);
     doc.pipe(res);
 
     // Header
-    doc.fillColor('#2563EB').fontSize(24).text('BharatGig', { continued: true }).fillColor('#0F172A').text(' | Financial Intelligence');
+    doc.fillColor('#2563EB').fontSize(24).text('GigIndia', { continued: true }).fillColor('#0F172A').text(' | Financial Intelligence');
     doc.fontSize(10).fillColor('#64748B').text(`Generated on ${new Date().toLocaleDateString()}`, { align: 'right' });
     doc.moveDown(2);
 
@@ -182,7 +182,7 @@ export const exportPDF = async (req: Request, res: Response) => {
 
     // Footer
     doc.fontSize(10).fillColor('#94A3B8').text(
-      'Confidential - BharatGig Internal Financial Document',
+      'Confidential - GigIndia Internal Financial Document',
       50,
       730,
       { align: 'center', width: 500 }

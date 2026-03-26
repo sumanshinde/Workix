@@ -65,17 +65,39 @@ export const handleRazorpayWebhook = async (req: Request, res: Response) => {
       .digest('hex');
 
     if (signature === expectedSignature) {
-      console.log('[RAZORPAY] Webhook Verified');
+      console.log(`[RAZORPAY] Webhook Verified [Event: ${req.body.event}]`);
       const { event, payload } = req.body;
       
-      if (event === 'payment.captured') {
-          console.log(`[RAZORPAY] Payment captured: ${payload.payment.entity.id}`);
-          // Logic for successful payment
+      if (event === 'payment.captured' || event === 'order.paid') {
+          const payment = payload.payment?.entity || payload.order?.entity;
+          const notes = payment?.notes || {};
+          console.log(`[RAZORPAY] Processing success for ID: ${payment?.id}`);
+          
+          // Background Activation Fallback
+          // Case 1: Requirement Posts
+          if (notes.type === 'requirement_post' && notes.postId) {
+              const RequirementPost = require('../models/RequirementPost').default;
+              await RequirementPost.findByIdAndUpdate(
+                  notes.postId, 
+                  { isPaid: true, paymentId: payment.id, status: 'active' }
+              );
+              console.log(`[WEBHOOK] Activated Requirement Post: ${notes.postId}`);
+          }
+
+          // Case 2: Campaigns (Ads)
+          if (notes.type === 'ad_promotion' && notes.adId) {
+              const Ad = require('../models/Ad').default;
+              await Ad.findByIdAndUpdate(
+                  notes.adId, 
+                  { isPaid: true, paymentId: payment.id, status: 'active' }
+              );
+              console.log(`[WEBHOOK] Activated Ad Campaign: ${notes.adId}`);
+          }
       }
       
       res.json({ status: 'ok' });
     } else {
-      console.warn('[RAZORPAY] Signature mismatch');
+      console.warn('[RAZORPAY] Signature mismatch for webhook');
       res.status(400).json({ status: 'invalid signature' });
     }
   } catch (err: any) {

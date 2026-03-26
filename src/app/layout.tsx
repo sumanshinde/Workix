@@ -13,9 +13,11 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', weight: ['40
 const poppins = Poppins({ subsets: ['latin'], variable: '--font-poppins', weight: ['600', '700'] });
 
 export const metadata: Metadata = {
-  title: 'BharatGig / GigIndia | Premium Freelance Marketplace',
-  description: 'The heartbeat of Indian talent. Connect with top freelancers, manage projects with Lead Lock, and secure transactions with e-KYC.',
+  title: 'GigIndia | Premium Freelance Marketplace',
+  description: 'The heartbeat of Indian talent. Connect with top freelancers, manage projects with Lead Lock, and secure transactions with GigIndia e-KYC.',
 };
+
+import { PageTransition } from '@/components/PageTransition';
 
 export default function RootLayout({
   children,
@@ -28,13 +30,15 @@ export default function RootLayout({
         
         {/* Global Abstract Background Blobs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-[-1]">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px] will-change-transform" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/5 rounded-full blur-[120px] will-change-transform" />
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/5 rounded-full blur-[120px]" />
         </div>
 
         <Providers>
           <ErrorBoundary>
-            <main className="relative z-10">{children}</main>
+            <PageTransition>
+              {children}
+            </PageTransition>
           </ErrorBoundary>
           <VideoRecorderWidget />
         </Providers>

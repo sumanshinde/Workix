@@ -8,9 +8,15 @@ const requirementPostSchema = new mongoose.Schema({
   pincode:     { type: String, default: '' },
   budget:      { type: Number, required: true },       // in INR
   description: { type: String, required: true, maxlength: 500 },
+  image:       { type: String },                       // S3/Cloudinary URL or Base64
+  features:    [{ type: String }],                     // Specific features they want
   
   // Who posted
   userId:      { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  
+  // Highlighting/Boosting
+  isBoosted:   { type: Boolean, default: false },
+  boostOrder:  { type: String },                       // RZP order for boost if separate
   
   // Payment gate
   isPaid:      { type: Boolean, default: false },

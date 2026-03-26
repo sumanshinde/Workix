@@ -1,6 +1,6 @@
 # Deployment & Domain Connection Guide 🚀
 
-Follow these steps to deploy your **BharatGig** marketplace and connect your custom domain.
+Follow these steps to deploy your **GigIndia** marketplace and connect your custom domain.
 
 ## 1. Hosting Platforms (Recommended)
 - **Frontend**: [Vercel](https://vercel.com) or [Netlify](https://netlify.com)
@@ -70,8 +70,8 @@ NEXT_PUBLIC_API_URL=https://your-backend-api.com
 ## Summary Table for DNS
 | Hostname | Type | Value |
 | :--- | :--- | :--- |
-| `bharatgig.com` | `A` | `76.76.21.21` |
-| `www.bharatgig.com` | `CNAME` | `cname.vercel-dns.com` |
+| `GigIndia.com` | `A` | `76.76.21.21` |
+| `www.GigIndia.com` | `CNAME` | `cname.vercel-dns.com` |
 
 ---
 **Need Help?** Verify your DNS propagation at [whatsmydns.net](https://whatsmydns.net).

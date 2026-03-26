@@ -17,7 +17,7 @@ const getSettings = async () => {
 // ── CREATE REQUIREMENT POST (draft) ──────────────────────────────────────────
 export const createRequirementPost = async (req: Request, res: Response) => {
   try {
-    const { title, category, location, city, pincode, budget, description } = req.body;
+    const { title, category, location, city, pincode, budget, description, image, features, isBoosted } = req.body;
     const userId = (req as any).user.id;
 
     if (!title || !category || !budget || !description) {
@@ -25,6 +25,11 @@ export const createRequirementPost = async (req: Request, res: Response) => {
     }
 
     const settings = await getSettings();
+    
+    // Fee calculation logic
+    const baseFee = settings.requirementPostFee; // e.g. 500 paise (₹5)
+    const boostFee = isBoosted ? 49900 : 0;        // e.g. 49900 paise (₹499)
+    const totalFee = baseFee + boostFee;
 
     const post = new RequirementPost({
       title: title.trim(),
@@ -34,19 +39,23 @@ export const createRequirementPost = async (req: Request, res: Response) => {
       pincode: pincode || '',
       budget,
       description: description.trim(),
+      image,
+      features: features || [],
+      isBoosted: !!isBoosted,
       userId,
-      feePaid: settings.requirementPostFee,
+      feePaid: totalFee,
       status: 'pending_payment',
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     });
 
     await post.save();
 
-    // Create Razorpay order for the ₹5 fee
-    const feeInRupees = settings.requirementPostFee / 100; // convert paise to rupees
+    // Create Razorpay order for the total fee
+    const feeInRupees = totalFee / 100;
     const order = await createRazorpayOrder(feeInRupees, `req_${post._id}`, {
       type: 'requirement_post',
       postId: String(post._id),
+      isBoosted: String(!!isBoosted),
     });
 
     res.status(201).json({
@@ -127,7 +136,7 @@ export const getRequirementPosts = async (req: Request, res: Response) => {
 
     const posts = await RequirementPost.find(query)
       .populate('userId', 'name avatar rating city')
-      .sort({ createdAt: -1 })
+      .sort({ isBoosted: -1, createdAt: -1 })
       .limit(50);
 
     res.json(posts);

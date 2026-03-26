@@ -31,15 +31,15 @@ export default function ReferralDashboard() {
   }, []);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(`https://bharatgig.com/register?ref=${stats?.code}`);
+    navigator.clipboard.writeText(`https://GigIndia.com/register?ref=${stats?.code}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const shareLink = `https://bharatgig.com/register?ref=${stats?.code}`;
+  const shareLink = `https://GigIndia.com/register?ref=${stats?.code}`;
 
   const shareWA = () => {
-    window.open(`https://wa.me/?text=Hey! Join me on BharatGig. Use my code ${stats?.code} to get extra credits on your first project! ${shareLink}`, '_blank');
+    window.open(`https://wa.me/?text=Hey! Join me on GigIndia. Use my code ${stats?.code} to get extra credits on your first project! ${shareLink}`, '_blank');
   };
 
   if (loading) return (
@@ -66,7 +66,7 @@ export default function ReferralDashboard() {
                 Invite friends, earn <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 drop-shadow-sm animate-pulse scale-105 origin-left tracking-wide">₹500</span>
               </h1>
               <p className="text-lg text-slate-500 leading-relaxed font-medium">
-                Share the BharatGig experience. Empower your professional circle and get rewarded instantly for every successful referral.
+                Share the GigIndia experience. Empower your professional circle and get rewarded instantly for every successful referral.
               </p>
             </div>
 

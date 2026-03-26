@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { signIn, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, Github, ArrowLeft } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Github, ArrowLeft, Phone } from 'lucide-react';
 import { BRANDING } from '@/lib/config';
 import { Button, Card, Input } from '@/components/ui';
 
@@ -32,22 +32,40 @@ const SOCIAL = [
   },
 ];
 
-export default function LoginPage() {
-  const { status } = useSession();
+function LoginContent() {
+  const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [email, setEmail]       = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [loginType, setLoginType] = useState<'email' | 'phone'>('email');
   const [showPw, setShowPw]     = useState(false);
   const [loading, setLoading]   = useState<string | null>(null);
   const [error, setError]       = useState('');
 
-  // Automatically redirect if already authenticated
+  // Automatically redirect if already authenticated or capture errors
   useEffect(() => {
-    if (status === 'authenticated') {
-      router.push('/dashboard');
+    if (status === 'authenticated' && session?.user) {
+      if ((session.user as any).role === 'admin') {
+        router.push('/admin/dashboard');
+      } else if ((session.user as any).role === 'client') {
+        router.push('/client/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
     }
-  }, [status, router]);
+    
+    const urlError = searchParams.get('error');
+    if (urlError) {
+      if (urlError === 'OAuthSignin') setError('Could not start social authentication. Try again.');
+      else if (urlError === 'OAuthCallback') setError('Social authentication failed during callback.');
+      else if (urlError === 'OAuthCreateAccount') setError('Could not create an account with this social profile.');
+      else if (urlError === 'EmailSignin') setError('The e-mail could not be sent.');
+      else if (urlError === 'CredentialsSignin') setError('Invalid email or password.');
+      else setError('An error occurred during sign in. Code: ' + urlError);
+    }
+  }, [status, router, searchParams, session]);
 
   const handleSocial = async (provider: string) => {
     setLoading(provider);
@@ -68,23 +86,21 @@ export default function LoginPage() {
     
     try {
       const res = await signIn('credentials', {
-        email, 
+        email: loginType === 'email' ? identifier : undefined,
+        phone: loginType === 'phone' ? identifier : undefined,
         password,
         redirect: false,
       });
-
-      console.log('SignIn Response:', res);
       
       if (res?.error) {
         let errorMessage = res.error;
-        if (res.error === 'CredentialsSignin') errorMessage = 'Invalid email or password. Please try again.';
+        if (res.error === 'CredentialsSignin') errorMessage = 'Invalid credentials. Please verify your email/phone and password.';
         setError(errorMessage);
         setLoading(null);
         return;
       }
 
       if (res?.ok) {
-        router.push('/dashboard');
         router.refresh(); 
       }
       
@@ -97,10 +113,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 selection:bg-blue-100 selection:text-blue-600 relative overflow-hidden">
-      
-      {/* Background blobs removed to prevent overlap with global layout blurs and reduce rendering lag */}
-
-
       {/* Logo */}
       <div
         className="relative z-10 flex items-center gap-3 mb-10 cursor-pointer group"
@@ -112,10 +124,8 @@ export default function LoginPage() {
         <span className="text-2xl font-bold text-slate-900 tracking-tight">{BRANDING.name}</span>
       </div>
 
-      {/* Center Card */}
       <div className="relative z-10 w-full max-w-[420px]">
         <div className="bg-white/80 backdrop-blur-xl border border-slate-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] rounded-[24px] overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)]">
-          
           <div className="pt-10 pb-4 text-center px-8">
             <h2 className="text-3xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 tracking-tight">
               Welcome back
@@ -124,7 +134,6 @@ export default function LoginPage() {
           </div>
 
           <div className="px-8 pb-10 space-y-7">
-            
             {error && (
               <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center gap-3 text-red-600 text-sm font-medium">
                 <AlertCircle size={18} className="shrink-0" />
@@ -132,7 +141,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Social login */}
             <div className="grid grid-cols-1 gap-3.5">
               {SOCIAL.map((provider) => (
                 <Button
@@ -150,86 +158,103 @@ export default function LoginPage() {
               ))}
             </div>
 
-            {/* Divider */}
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-slate-200"></div>
-              <span className="mx-4 text-xs uppercase font-bold tracking-wider text-slate-400 px-2 bg-transparent">
-                OR
-              </span>
+              <span className="mx-4 text-xs uppercase font-bold tracking-wider text-slate-400 px-2 bg-transparent">OR</span>
               <div className="flex-grow border-t border-slate-200"></div>
             </div>
 
-            {/* Email Form */}
-            <form onSubmit={handleCredentials} className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 px-1">Email address</label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="name@company.com"
-                    required
-                    disabled={!!loading}
-                    className="h-12 rounded-xl bg-[#f9fafb] border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200 text-[15px]"
-                    leftIcon={<Mail size={20} className="text-slate-400" />}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between px-1">
-                    <label className="text-sm font-medium text-slate-700">Password</label>
-                    <a href="#" className="text-sm text-blue-600 font-semibold hover:text-blue-700 transition-colors">Forgot?</a>
-                  </div>
-                  <Input
-                    type={showPw ? "text" : "password"}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    disabled={!!loading}
-                    className="h-12 rounded-xl bg-[#f9fafb] border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200 text-[15px]"
-                    leftIcon={<Lock size={20} className="text-slate-400" />}
-                    rightIcon={
-                      <button type="button" onClick={() => setShowPw(!showPw)} className="text-slate-400 hover:text-slate-600 focus:outline-none transition-colors pointer-events-auto flex items-center h-full px-2">
-                        {showPw ? <EyeOff size={20} /> : <Eye size={20} />}
-                      </button>
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  isLoading={loading === 'credentials'}
-                  disabled={!!loading}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-[15px] transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/25 border-none disabled:opacity-70 disabled:hover:scale-100 disabled:active:scale-100"
+            <div className="space-y-6">
+              <div className="flex p-1.5 bg-slate-100 rounded-2xl w-fit mx-auto shadow-inner border border-slate-200">
+                <button 
+                  onClick={() => setLoginType('email')}
+                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${loginType === 'email' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                 >
-                  Sign In to Dashboard
-                </Button>
+                  Email
+                </button>
+                <button 
+                   onClick={() => setLoginType('phone')}
+                   className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${loginType === 'phone' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  Phone
+                </button>
               </div>
-            </form>
+
+              <form onSubmit={handleCredentials} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
+                      {loginType === 'email' ? 'Email Address' : 'Phone Number'}
+                    </label>
+                    <Input
+                      type={loginType === 'email' ? 'email' : 'tel'}
+                      value={identifier}
+                      onChange={e => setIdentifier(e.target.value)}
+                      placeholder={loginType === 'email' ? 'name@company.com' : 'Enter 10 digit phone'}
+                      required
+                      disabled={!!loading}
+                      className="h-14 rounded-2xl bg-white border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 text-base"
+                      leftIcon={loginType === 'email' ? <Mail size={20} className="text-slate-400" /> : <Phone size={20} className="text-slate-400" />}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Password</label>
+                      <a href="#" className="text-xs text-blue-600 font-bold hover:text-blue-700 transition-colors uppercase tracking-widest">Forgot?</a>
+                    </div>
+                    <Input
+                      type={showPw ? "text" : "password"}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      disabled={!!loading}
+                      className="h-14 rounded-2xl bg-white border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 text-base font-bold"
+                      leftIcon={<Lock size={20} className="text-slate-400" />}
+                      rightIcon={
+                        <button type="button" onClick={() => setShowPw(!showPw)} className="text-slate-400 hover:text-slate-600 focus:outline-none transition-colors pointer-events-auto flex items-center h-full px-2">
+                          {showPw ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    type="submit"
+                    isLoading={loading === 'credentials'}
+                    disabled={!!loading}
+                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-sm transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/25 border-none disabled:opacity-70 uppercase tracking-widest"
+                  >
+                    Authorize Access
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
 
           <div className="py-6 bg-slate-50/50 border-t border-slate-100 text-center">
             <p className="text-[13px] font-medium text-slate-500">
               Don't have an account?{' '}
-              <a href="/register" className="text-blue-600 font-semibold hover:text-indigo-600 transition-colors">
-                Create one
-              </a>
+              <a href="/register" className="text-blue-600 font-semibold hover:text-indigo-600 transition-colors">Create one</a>
             </p>
           </div>
         </div>
       </div>
 
-      <a
-        href="/"
-        className="relative z-10 mt-8 text-[13px] font-medium text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-1.5"
-      >
-        <ArrowLeft size={14} />
-        Back to home
+      <a href="/" className="relative z-10 mt-8 text-[13px] font-medium text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-1.5">
+        <ArrowLeft size={14} /> Back to home
       </a>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f8fafc] flex items-center justify-center font-bold text-slate-400">Loading auth...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

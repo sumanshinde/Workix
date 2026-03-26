@@ -13,6 +13,8 @@ import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
 const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444'];
 
+import { analyticsAPI } from '@/services/api';
+
 export default function AdminFinancialReports() {
   const [dateRange, setDateRange] = useState({
     startDate: format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'),
@@ -27,14 +29,18 @@ export default function AdminFinancialReports() {
 
   const fetchReport = async () => {
     setLoading(true);
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/reports/monthly?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`);
-    const result = await res.json();
-    setData(result);
+    try {
+      const result = await analyticsAPI.getMonthly(dateRange.startDate, dateRange.endDate);
+      setData(result);
+    } catch (err) {
+      console.error('Failed to load financial report:', err);
+    }
     setLoading(false);
   };
 
   const handleExport = (type: 'pdf' | 'csv') => {
-    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/reports/export/${type}?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`);
+    const url = analyticsAPI.getExportUrl(type, dateRange.startDate, dateRange.endDate);
+    window.open(url);
   };
 
   if (loading || !data) {

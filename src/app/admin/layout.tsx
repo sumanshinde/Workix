@@ -10,6 +10,7 @@ import {
   ChevronLeft, Command, UserCheck, Building2,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BRANDING } from '@/lib/config';
 
@@ -123,6 +124,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
 
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login?error=AccessDenied');
+    } else if (status === 'authenticated' && (session?.user as any)?.role !== 'admin') {
+      router.push('/dashboard');
+    }
+  }, [status, session, router]);
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
@@ -152,6 +163,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push(path);
     if (isMobile) setShowMobileMenu(false);
   };
+
+  if (status === 'loading') {
+    return (
+       <div className="h-screen w-screen bg-white flex flex-col items-center justify-center gap-6">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Verifying Administrative Authority...</p>
+       </div>
+    );
+  }
+
+  if (status === 'authenticated' && (session?.user as any)?.role !== 'admin') {
+    return (
+      <div className="h-screen w-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 mb-6">
+          <Shield size={40} />
+        </div>
+        <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Access Resticted</h1>
+        <p className="text-slate-500 font-medium max-w-sm mb-8">
+          You are currently logged in with a standard account. Administrative privileges are required to access this console.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button 
+            onClick={() => router.push('/')}
+            className="px-8 py-3 bg-white border border-slate-200 text-slate-900 font-bold rounded-xl hover:bg-slate-50 transition-colors"
+          >
+            Back to Home
+          </button>
+          <button 
+            onClick={() => {
+              localStorage.clear();
+              router.push('/login');
+            }}
+            className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all"
+          >
+            Switch Account
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Sidebar Content (shared desktop/mobile) ────────────────────────────────
   const SidebarContent = ({ mobile = false }: { mobile?: boolean }) => {

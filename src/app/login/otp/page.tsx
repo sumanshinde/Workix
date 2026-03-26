@@ -99,7 +99,7 @@ export default function OTPLoginPage() {
         
         {/* Branding */}
         <div className="text-center mb-10 space-y-2">
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">BharatGig</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">GigIndia</h1>
           <p className="text-sm font-medium text-slate-500 uppercase tracking-widest">Work with India's Best</p>
         </div>
 

@@ -233,11 +233,11 @@ export default function BusinessSettingsPage() {
                 <input
                   type="text"
                   readOnly
-                  value="https://api.bharatgig.in/webhooks/razorpay"
+                  value="https://api.GigIndia.in/webhooks/razorpay"
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 text-sm text-slate-600 outline-none font-mono"
                 />
                 <button
-                  onClick={() => handleCopy('webhook', 'https://api.bharatgig.in/webhooks/razorpay')}
+                  onClick={() => handleCopy('webhook', 'https://api.GigIndia.in/webhooks/razorpay')}
                   className="p-3 bg-slate-100 rounded-xl hover:bg-blue-50 hover:text-blue-600 text-slate-500 transition-colors"
                 >
                   {copied === 'webhook' ? <CheckCircle2 size={16} /> : <Copy size={16} />}
@@ -264,10 +264,11 @@ export default function BusinessSettingsPage() {
 
             <div className="space-y-4">
               {[
-                { label: 'Publishable Key (Test)', key: 'pk_test_aBcDeFgHiJkLmNoPqRsT', env: 'test' },
-                { label: 'Secret Key (Test)', key: 'sk_test_xYzAbCdEfGhIjKlMnOpQ', env: 'test', secret: true },
-                { label: 'Publishable Key (Live)', key: 'pk_live_1234567890abcdefghij', env: 'live' },
-                { label: 'Secret Key (Live)', key: 'sk_live_abcdefghij1234567890', env: 'live', secret: true },
+                { label: 'Publishable Key (Test)', key: 'pk_test_aBcDeFgHiJkLmNoPqRsT', env: 'test', platform: 'Razorpay' },
+                { label: 'Secret Key (Test)', key: 'sk_test_xYzAbCdEfGhIjKlMnOpQ', env: 'test', secret: true, platform: 'Razorpay' },
+                { label: 'Publishable Key (Live)', key: 'pk_live_1234567890abcdefghij', env: 'live', platform: 'Razorpay' },
+                { label: 'Secret Key (Live)', key: 'sk_live_abcdefghij1234567890', env: 'live', secret: true, platform: 'Razorpay' },
+                { label: 'Google Maps API Key', key: 'AIzaSyTestKey1234567890abcdefghijklm', env: 'live', secret: true, platform: 'Maps' },
               ].map(item => (
                 <div key={item.label} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
                   <div className="flex-1 min-w-0">
@@ -276,6 +277,7 @@ export default function BusinessSettingsPage() {
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
                         item.env === 'live' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-200 text-slate-500'
                       }`}>{item.env}</span>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-50 text-blue-600">{item.platform}</span>
                     </div>
                     <p className="text-sm font-mono text-slate-500 truncate">
                       {item.secret && !showKey ? '•'.repeat(32) : item.key}

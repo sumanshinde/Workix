@@ -36,8 +36,8 @@ export default function ShortlistPage() {
     setHiring(true);
     try {
        await shortlistsAPI.approve(id as string, freelancerUserId);
-       alert('Hire finalized! Welcome to BharatGig Enterprise.');
-       router.push('/dashboard');
+        alert('Hire finalized! Welcome to GigIndia Enterprise.');
+        router.push('/dashboard');
     } catch (err) {
        alert('Hiring failed');
     } finally {
@@ -107,7 +107,7 @@ export default function ShortlistPage() {
                                      {[1,2,3,4,5].map(s => <Star key={s} size={10} fill="#f59e0b" className="text-amber-500" />)}
                                   </div>
                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.userId?.trustScore}% Trust Score</span>
-                               </div>
+                                </div>
                             </div>
                          </div>
 

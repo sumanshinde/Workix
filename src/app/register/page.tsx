@@ -185,7 +185,14 @@ export default function GigIndiaRegisterPage() {
     setLoading(true);
     try {
       const res = await authAPI.register({
-        name: form.fullName, email: form.email, password: form.password, role,
+        name: form.fullName, 
+        email: form.email, 
+        phone: `${form.countryCode}${form.phone}`,
+        city: form.city,
+        gender: form.gender,
+        category: form.category,
+        password: form.password, 
+        role,
       });
 
       if (res.success || res.token) {

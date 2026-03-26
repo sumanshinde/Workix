@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   // Growth & Ranking
   rating: { type: Number, default: 0 },
   reviewsCount: { type: Number, default: 0 },
-  badge: { type: String, enum: ['', 'Top Rated', 'Rising Talent', 'Level 1', 'Level 2', 'BharatGig Pro'], default: '' },
+  badge: { type: String, enum: ['', 'Top Rated', 'Rising Talent', 'Level 1', 'Level 2', 'GigIndia Pro'], default: '' },
   isFeatured: { type: Boolean, default: false },
   
   // KYC & Verification
@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
   // Lead Lock & Credits
   availableCredits: { type: Number, default: 10 },
   coins: { type: Number, default: 0 },
-  subscriptionStatus: { type: String, enum: ['free', 'pro', 'enterprise'], default: 'free' },
+  subscriptionStatus: { type: String, enum: ['free', 'pro', 'premium', 'enterprise'], default: 'free' },
   
   // Geolocation
   location: {

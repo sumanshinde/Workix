@@ -62,7 +62,7 @@ export default function SmartHireCard({ jobId, budget }: { jobId: string; budget
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
         amount: rzpOrder.amount,
         currency: 'INR',
-        name: 'BharatGig Hire',
+        name: 'GigIndia Hire',
         description: `Hiring ${match.freelancer.name}`,
         order_id: rzpOrder.id,
         handler: async function (response: any) {

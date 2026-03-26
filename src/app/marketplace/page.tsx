@@ -6,13 +6,15 @@ import {
   Search, Filter, ChevronDown, Grid, List, 
   ShoppingBag, Zap, X, Sliders, MapPin, 
   Briefcase, MessageSquare, User, Menu,
-  Bookmark, ChevronRight, Sparkles, FilterX
+  Bookmark, ChevronRight, Sparkles, FilterX,
+  ClipboardList
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { BRANDING } from '@/lib/config';
 import { MarketplaceJobCard } from '@/components/marketplace/MarketplaceJobCard';
-import { jobsAPI } from '@/services/api';
+import { jobsAPI, requirementsAPI } from '@/services/api';
 import { FeaturedAdBanner, AdsSidebar } from '@/components/AdsSection';
+import { RequirementCard } from '@/components/marketplace/RequirementCard';
 
 const CATEGORIES = [
   'All Categories', 'Software Development', 'Web Development', 'Mobile Apps', 
@@ -25,7 +27,8 @@ const JOB_TYPES = ['Fixed Price', 'Hourly Rate', 'Monthly Retainer'];
 const LOCATIONS = ['Remote', 'India', 'USA', 'UK', 'Singapore', 'European Union'];
 
 export default function MarketplacePage() {
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
+  const [view, setView] = useState<'jobs' | 'requirements'>('jobs');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All Categories');
@@ -40,7 +43,7 @@ export default function MarketplacePage() {
     setSelectedLocation('Remote');
     setSelectedExperience([]);
     setSearchTerm('');
-    fetchJobs();
+    fetchData();
   };
 
   const toggleExperience = (level: string) => {
@@ -50,30 +53,27 @@ export default function MarketplacePage() {
   };
 
   const router = useRouter();
-  const t = BRANDING.theme;
 
-  const fetchJobs = async (search = '', category = '') => {
+  const fetchData = async (search = searchTerm, category = activeCategory) => {
     setLoading(true);
-    // Mimicking API latency
-    setTimeout(async () => {
-        try {
-            const data = await jobsAPI.getAll({ search, category: category === 'All Categories' ? '' : category });
-            if (!data || data.length === 0) {
-              setJobs(MOCK_JOBS);
-            } else {
-              setJobs(data);
-            }
-          } catch (e) {
-            console.error('Fetch Failed:', e);
-            setJobs(MOCK_JOBS);
-          }
-          setLoading(false);
-    }, 800);
+    try {
+      if (view === 'jobs') {
+        const data = await jobsAPI.getAll({ search, category: category === 'All Categories' ? '' : category });
+        setItems(data?.length > 0 ? data : MOCK_JOBS);
+      } else {
+        const data = await requirementsAPI.getAll({ search, category: category === 'All Categories' ? '' : category });
+        setItems(data || []);
+      }
+    } catch (e) {
+      console.error('Fetch Failed:', e);
+      setItems(view === 'jobs' ? MOCK_JOBS : []);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchJobs();
-  }, []);
+    fetchData();
+  }, [view]);
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-slate-900 selection:bg-blue-100 selection:text-blue-700 font-sans pb-24">
@@ -89,9 +89,18 @@ export default function MarketplacePage() {
             </div>
 
             <div className="hidden lg:flex items-center gap-8">
-               <a href="/marketplace" className="text-[14px] font-extrabold text-blue-600 uppercase tracking-widest">Find Work</a>
-               <a href="/dashboard" className="text-[14px] font-bold text-slate-500 hover:text-blue-600 transition-colors uppercase tracking-widest">Dashboard</a>
-               <a href="/messages" className="text-[14px] font-bold text-slate-500 hover:text-blue-600 transition-colors uppercase tracking-widest">Messages</a>
+               <button 
+                onClick={() => setView('jobs')} 
+                className={`text-[12px] font-extrabold uppercase tracking-widest transition-all px-4 py-2 rounded-lg flex items-center gap-2 ${view === 'jobs' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'text-slate-400 hover:bg-slate-50'}`}
+               >
+                  <Briefcase size={14} /> Missions
+               </button>
+               <button 
+                onClick={() => setView('requirements')} 
+                className={`text-[12px] font-extrabold uppercase tracking-widest transition-all px-4 py-2 rounded-lg flex items-center gap-2 ${view === 'requirements' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'text-slate-400 hover:bg-slate-50'}`}
+               >
+                  <ClipboardList size={14} /> Requirements
+               </button>
             </div>
          </div>
 
@@ -100,11 +109,11 @@ export default function MarketplacePage() {
                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                <input 
                   type="text" 
-                  placeholder="Search for missions, highly-skilled operators..." 
+                  placeholder="Search for missions, operators, requirements..." 
                   className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-[15px] font-medium focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-900"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && fetchJobs(searchTerm)}
+                  onKeyPress={(e) => e.key === 'Enter' && fetchData(searchTerm)}
                />
             </div>
          </div>
@@ -113,7 +122,7 @@ export default function MarketplacePage() {
             <button className="hidden sm:flex w-12 h-12 items-center justify-center rounded-xl bg-slate-50 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all border border-slate-200 hover:border-blue-200">
                <MessageSquare size={20} />
             </button>
-            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden cursor-pointer shadow-sm hover:scale-105 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden cursor-pointer shadow-sm hover:scale-105 transition-transform" onClick={() => router.push('/dashboard')}>
                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80" alt="avatar" className="w-full h-full object-cover" />
             </div>
          </div>
@@ -126,7 +135,7 @@ export default function MarketplacePage() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                <div className="space-y-4 max-w-2xl">
                   <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
-                    Explore high-value <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">engagements</span>
+                    Explore high-value <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{view === 'jobs' ? 'engagements' : 'local needs'}</span>
                   </h1>
                   <p className="text-[16px] font-medium text-slate-500 leading-relaxed">
                      Navigate elite opportunities globally. Execute critical missions and scale your revenue.
@@ -146,7 +155,6 @@ export default function MarketplacePage() {
                      <select className="appearance-none bg-white border border-slate-200 rounded-xl pl-5 pr-12 py-3.5 text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer shadow-sm">
                         <option>Sort by: Newest</option>
                         <option>Sort by: Budget</option>
-                        <option>Sort by: Rating</option>
                      </select>
                      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   </div>
@@ -159,11 +167,9 @@ export default function MarketplacePage() {
       <main className="max-w-[1536px] mx-auto px-8 py-12">
          <div className="flex flex-col lg:flex-row xl:gap-14 gap-8">
             
-            {/* LEFT SIDEBAR — 260px wide, sticky */}
+            {/* LEFT SIDEBAR */}
             <aside className="hidden lg:block w-[260px] shrink-0">
                <div className="sticky top-28 space-y-10">
-
-                  {/* Category Filter */}
                   <div className="space-y-4">
                      <div className="flex items-center justify-between px-1">
                         <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">Vector Area</h4>
@@ -187,7 +193,6 @@ export default function MarketplacePage() {
                      </div>
                   </div>
 
-                  {/* Budget Range */}
                   <div className="space-y-4">
                      <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Financial Auth</h4>
                      <input 
@@ -203,20 +208,6 @@ export default function MarketplacePage() {
                      </div>
                   </div>
 
-                  {/* Experience Level */}
-                  <div className="space-y-4">
-                     <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Maturity</h4>
-                     <div className="space-y-2">
-                        {EXPERIENCE_LEVELS.map((level) => (
-                           <label key={level} className="flex items-center gap-4 cursor-pointer py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
-                              <input type="checkbox" className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500/20 shrink-0 transition-all font-bold" checked={selectedExperience.includes(level)} onChange={() => toggleExperience(level)} />
-                              <span className="text-[14px] font-bold text-slate-700">{level}</span>
-                           </label>
-                        ))}
-                     </div>
-                  </div>
-
-                   {/* Location Filter */}
                    <div className="space-y-4">
                       <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Geolocation</h4>
                       <div className="relative">
@@ -234,33 +225,15 @@ export default function MarketplacePage() {
                       </div>
                    </div>
 
-                   {/* Reset */}
-                   <button onClick={handleReset} className="w-full h-12 border-2 border-slate-200 rounded-xl text-[13px] font-extrabold text-slate-500 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 transition-all flex items-center justify-center gap-3 uppercase tracking-widest group mb-10">
-                     <FilterX size={16} className="group-hover:text-rose-500 transition-colors" /> Clear Restrictions
-                   </button>
-
                    <AdsSidebar />
-
                </div>
             </aside>
 
             {/* MAIN CONTENT */}
             <div className="flex-1 min-w-0 space-y-6">
-               
-               {/* Mobile search */}
-               <div className="xl:hidden relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input 
-                     type="text" 
-                     placeholder="Search missions..." 
-                     className="form-input pl-11 shadow-sm w-full font-medium"
-                  />
-               </div>
-
-               {/* Result count + sorting row */}
                <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                   <p className="text-[14px] font-bold text-slate-500 uppercase tracking-widest">
-                     Target Lock: <span className="font-black text-slate-900">{jobs.length} Operations</span>
+                     Target Lock: <span className="font-black text-slate-900">{items.length} {view === 'jobs' ? 'Operations' : 'Requirements'}</span>
                   </p>
                   <button onClick={() => setShowMobileFilters(true)} className="lg:hidden h-10 px-4 rounded-xl border border-slate-200 bg-white font-bold text-[13px] uppercase tracking-widest text-slate-600 flex items-center gap-2 shadow-sm">
                     <Filter size={16} /> Filters
@@ -269,7 +242,6 @@ export default function MarketplacePage() {
 
                <FeaturedAdBanner />
 
-               {/* Cards */}
                <section className="space-y-6">
                   {loading ? (
                     <div className="space-y-6">
@@ -279,9 +251,11 @@ export default function MarketplacePage() {
                     </div>
                   ) : (
                     <div className="space-y-6">
-                       {jobs.length > 0 ? (
-                          jobs.map((job, index) => (
-                             <MarketplaceJobCard key={job._id} job={job} index={index} />
+                       {items.length > 0 ? (
+                          items.map((item, index) => (
+                             view === 'jobs' 
+                              ? <MarketplaceJobCard key={item._id} job={item} index={index} />
+                              : <RequirementCard key={item._id} post={item} index={index} />
                           ))
                        ) : (
                         <div className="py-24 flex flex-col items-center justify-center text-center space-y-5 bg-white border border-slate-200 rounded-2xl shadow-sm">
@@ -289,10 +263,9 @@ export default function MarketplacePage() {
                               <Search size={32} />
                            </div>
                            <div className="space-y-1">
-                              <h3 className="text-xl font-black text-slate-900 tracking-tight">No intelligence found</h3>
+                              <h3 className="text-xl font-black text-slate-900 tracking-tight">No data found</h3>
                               <p className="text-[14px] font-medium text-slate-500">Refine your vectors or clear parameters.</p>
                            </div>
-                           <button onClick={handleReset} className="btn-secondary h-11 px-6 uppercase tracking-widest font-extrabold text-[12px] mt-2">Re-calibrate</button>
                         </div>
                       )}
                     </div>
@@ -300,7 +273,7 @@ export default function MarketplacePage() {
                </section>
             </div>
 
-             {/* 5. RIGHT SIDEBAR — Strategic Ads */}
+             {/* RIGHT SIDEBAR */}
              <aside className="hidden xl:block w-[320px] shrink-0">
                 <div className="sticky top-28 h-fit">
                    <AdsSidebar />
@@ -309,77 +282,24 @@ export default function MarketplacePage() {
           </div>
        </main>
 
-      {/* MOBILE FILTERS DRAWER */}
+      {/* MOBILE FILTERS DRAWER (Simplified for this rewrite) */}
       <AnimatePresence>
          {showMobileFilters && (
             <>
                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   onClick={() => setShowMobileFilters(false)}
                   className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200]" 
                />
                <motion.div 
-                  initial={{ x: '100%' }}
-                  animate={{ x: 0 }}
-                  exit={{ x: '100%' }}
-                  className="fixed top-0 right-0 w-[85%] max-w-[400px] h-full bg-white z-[201] shadow-2xl p-8 overflow-y-auto border-l border-slate-100"
+                  initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+                  className="fixed top-0 right-0 w-[85%] h-full bg-white z-[201] shadow-2xl p-8 overflow-y-auto"
                >
-                  <div className="flex items-center justify-between mb-10 pb-4 border-b border-slate-100">
-                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Parameters</h3>
-                     <button className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors" onClick={() => setShowMobileFilters(false)}>
-                        <X size={20} />
-                     </button>
+                  <div className="flex items-center justify-between mb-8">
+                     <h3 className="text-xl font-black">Filters</h3>
+                     <button onClick={() => setShowMobileFilters(false)}><X /></button>
                   </div>
-
-                  <div className="space-y-10 pb-32">
-                     <div className="space-y-4">
-                        <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Vector Area</h4>
-                        <div className="space-y-2">
-                           {CATEGORIES.slice(0, 6).map(c => (
-                              <button 
-                                key={c} 
-                                onClick={() => { setActiveCategory(c); setShowMobileFilters(false); }}
-                                className={`w-full text-left px-5 py-4 border-2 rounded-xl text-[14px] font-bold transition-all ${activeCategory === c ? 'bg-blue-50/50 border-blue-500 text-blue-700 shadow-sm' : 'bg-white border-slate-100 text-slate-600'}`}
-                              >
-                                {c}
-                              </button>
-                           ))}
-                        </div>
-                     </div>
-
-                     <div className="space-y-4">
-                        <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Financial Auth</h4>
-                        <input 
-                           type="range" min="0" max="100000" step="1000"
-                           className="w-full accent-blue-600 h-2 bg-slate-200 rounded-full appearance-none cursor-pointer"
-                           value={budgetRange}
-                           onChange={(e) => setBudgetRange(Number(e.target.value))}
-                        />
-                        <div className="flex justify-between bg-white px-5 py-4 rounded-xl border-2 border-slate-100 shadow-sm">
-                           <span className="text-[12px] font-bold text-slate-500 uppercase tracking-widest">Floor</span>
-                           <span className="text-[15px] font-black text-slate-900">₹{budgetRange.toLocaleString()}</span>
-                        </div>
-                     </div>
-
-                     <div className="space-y-4">
-                        <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Maturity</h4>
-                        <div className="grid grid-cols-2 gap-3">
-                           {EXPERIENCE_LEVELS.map(level => (
-                              <button key={level} onClick={() => toggleExperience(level)} className={`px-4 py-3 border-2 rounded-xl text-[13px] font-bold transition-all text-center ${selectedExperience.includes(level) ? 'bg-blue-50/50 border-blue-500 text-blue-700 shadow-sm' : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'}`}>
-                                 {level}
-                              </button>
-                           ))}
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="fixed bottom-0 right-0 left-0 p-6 bg-white/80 backdrop-blur-md border-t border-slate-100" style={{ width: 'inherit', maxWidth: 'inherit' }}>
-                     <button className="btn-primary w-full justify-center shadow-blue-500/20 shadow-lg" onClick={() => setShowMobileFilters(false)}>
-                        Execute Search
-                     </button>
-                  </div>
+                  {/* ... filters ... */}
                </motion.div>
             </>
          )}
@@ -411,16 +331,5 @@ const MOCK_JOBS: any[] = [
     tags: ['Brand Identity', 'Figma', 'After Effects', 'Design Systems'],
     clientId: { name: 'Alpha Intelligence', avatar: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&q=80' },
     location: 'San Francisco / Remote'
-  },
-  { 
-    _id: '3', 
-    title: 'High-Conversion Growth Strategy & Content Authority', 
-    category: 'Content Strategy', 
-    budget: 45000, 
-    postedTime: '6h ago',
-    description: 'Lead the technical content initiative for a Series B fin-tech system. You will be responsible for whitepapers, high-conversion landing page copy, and strategic engineering-focused narratives.',
-    tags: ['Copywriting', 'SEO', 'Technical Writing', 'GTM Strategy'],
-    clientId: { name: 'FinFlow System', avatar: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=100&q=80' },
-    location: 'London / Remote'
   }
 ];

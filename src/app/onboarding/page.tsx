@@ -58,7 +58,10 @@ export default function OnboardingPage() {
     try {
        await onboardingAPI.claimReward();
        alert('Reward Claimed! Check your wallet.');
-       router.push('/dashboard');
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        if (user?.role === 'admin') router.push('/admin/dashboard');
+        else router.push('/dashboard');
     } catch (err) {
        alert('Claim failed');
     } finally {
@@ -183,7 +186,7 @@ export default function OnboardingPage() {
                    <div className="space-y-4">
                       <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic uppercase">Mission Accomplished!</h2>
                       <p className="text-lg font-medium text-slate-500 italic max-w-md mx-auto">
-                         You have successfully navigated the BharatGig activation flow. Claim your reward to start your journey.
+                         You have successfully navigated the GigIndia activation flow. Claim your reward to start your journey.
                       </p>
                    </div>
                    <Button 

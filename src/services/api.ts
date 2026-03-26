@@ -1,18 +1,27 @@
-// Central API client for BharatGig frontend ↔ backend communication
+import { getSession } from 'next-auth/react';
+
+// Central API client for GigIndia frontend ↔ backend communication
 // Backend base URL — change to your deployment URL in production
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 // ── Helper ───────────────────────────────────────────────────────────────────
-const getToken = () => {
+const getToken = async () => {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem('token') || '';
+  
+  // Try localStorage first (legacy)
+  const localToken = localStorage.getItem('token');
+  if (localToken) return localToken;
+
+  // Fallback to NextAuth session
+  const session = await getSession();
+  return (session as any)?.backendToken || '';
 };
 
 async function request<T = any>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getToken();
+  const token = await getToken();
   
   let res: Response;
   try {
@@ -38,23 +47,29 @@ async function request<T = any>(
   }
 
   if (!res.ok) {
-    // Silently fail for hidden tracking/analytics to prevent UI breakage during ad campaigns
     if (path.includes('/reports/track')) return {} as T;
 
     if (res.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        
-        // Use dynamic import for signOut to avoid SSR issues if this file is used server-side
         import('next-auth/react').then(({ signOut }) => {
           signOut({ redirect: true, callbackUrl: '/login?expired=1' });
         });
       }
     }
 
-    const err: any = await res.json().catch(() => ({ message: res.statusText }));
-    const error: any = new Error(err.message || 'Request failed');
+    let message = 'An unexpected error occurred. Please try again later.';
+    try {
+      const err = await res.json();
+      message = err.message || err.error || message;
+    } catch (e) {
+      if (res.status === 404) message = 'The requested resource was not found.';
+      if (res.status === 403) message = 'You do not have permission to perform this action.';
+      if (res.status >= 500) message = 'Our server encountered an issue. We have been notified.';
+    }
+
+    const error: any = new Error(message);
     error.status = res.status;
     throw error;
   }
@@ -64,10 +79,10 @@ async function request<T = any>(
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const authAPI = {
-  register: (data: { name: string; email: string; password: string; role: string; referralCode?: string }) =>
+  register: (data: { name: string; email: string; phone?: string; city?: string; gender?: string; category?: string; password: string; role: string; referralCode?: string }) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
 
-  login: (data: { email: string; password: string }) =>
+  login: (data: { email?: string; phone?: string; password: string }) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
 
   me: () => request('/auth/me'),
@@ -118,17 +133,17 @@ export const proposalsAPI = {
 
 // ── Reviews ──────────────────────────────────────────────────────────────────
 export const reviewsAPI = {
-  create: (data: { contractId: string; revieweeId: string; rating: number; comment: string }) =>
+  create: (data: { jobId: string; fromUserId: string; toUserId: string; rating: number; comment: string; role: string }) =>
     request('/reviews', { method: 'POST', body: JSON.stringify(data) }),
 
-  getForUser: (userId: string) => request(`/reviews/user/${userId}`),
+  getForUser: (userId: string) => request(`/reviews/${userId}`),
 };
 
 // ── Notifications ────────────────────────────────────────────────────────────
 export const notificationsAPI = {
   getAll:  () => request('/notifications'),
   markRead: (id: string) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
-  markAllRead: () => request('/notifications/read-all', { method: 'PATCH' }),
+  markAllRead: () => request('/notifications/read-all', { method: 'POST' }),
 };
 
 // ── Contracts ────────────────────────────────────────────────────────────────
@@ -152,11 +167,25 @@ export const paymentsAPI = {
   verify: (data: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
     request('/payments/verify', { method: 'POST', body: JSON.stringify(data) }),
 
-  createGlobal: (data: { amount: number; currency: string; country: string }) => 
+  createGlobal: (data: { amount: number; currency: string; country: string; planId?: string }) =>
     request('/payments/create-global', { method: 'POST', body: JSON.stringify(data) }),
+  
+  verifyGlobal: (data: any) => request('/payments/verify-global', { method: 'POST', body: JSON.stringify(data) }),
   getWallet:    () => request('/payments/wallet'),
   withdraw:     (data: { amount: number }) => 
     request('/payments/withdraw', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Payouts API ─────────────────────────────────────────────────────────────
+export const payoutsAPI = {
+  setupMethod: (data: any) =>
+    request('/payouts/setup', { method: 'POST', body: JSON.stringify(data) }),
+  requestPayout: (amount: number, userId: string) =>
+    request('/payouts/request', { method: 'POST', body: JSON.stringify({ amount, userId }) }),
+  getUserStats: (userId: string) =>
+    request(`/payouts/user/${userId}`),
+  getPayoutMethod: () =>
+    request('/payouts/method'),
 };
 
 // ── Tax & GST ────────────────────────────────────────────────────────────────
@@ -185,6 +214,10 @@ export const analyticsAPI = {
     request('/reports/track', { method: 'POST', body: JSON.stringify({ event, category, metadata }) }),
   
   getSummary: () => request('/reports/analytics'),
+  getMonthly: (startDate: string, endDate: string) => 
+    request(`/reports/monthly?startDate=${startDate}&endDate=${endDate}`),
+  getExportUrl: (type: string, startDate: string, endDate: string) => 
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/reports/export/${type}?startDate=${startDate}&endDate=${endDate}`,
 };
 
 // ── Subscriptions ────────────────────────────────────────────────────────────
@@ -229,7 +262,6 @@ export const experimentAPI = {
 // ── Dashboard Aggregator ─────────────────────────────────────────────────────
 export const dashboardAPI = {
   getStats: () => {
-    if (typeof window !== 'undefined') console.trace('DEBUG: dashboardAPI.getStats called');
     return request('/dashboard/stats');
   },
 
@@ -282,6 +314,11 @@ export const adminAPI = {
   getDashboardStats: () => request('/admin/dashboard/stats'),
   getAllDisputes: () => request('/admin/disputes'),
   resolveDispute: (data: any) => request('/admin/disputes/resolve', { method: 'POST', body: JSON.stringify(data) }),
+  getAllOrders: () => request('/admin/orders'),
+  releaseOrder: (id: string) => request(`/admin/orders/${id}/release`, { method: 'POST' }),
+  refundOrder: (id: string) => request(`/admin/orders/${id}/refund`, { method: 'POST' }),
+  getPayoutRequests: () => request('/admin/payouts'),
+  processPayout: (data: { requestId: string; action: string; adminNotes?: string }) => request('/admin/payouts/process', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ── Orders ───────────────────────────────────────────────────────────────────

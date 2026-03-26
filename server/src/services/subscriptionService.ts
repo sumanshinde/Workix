@@ -9,7 +9,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret',
 });
 
-// Standard BharatGig Pro Plan ID from Razorpay Dashboard
+// Standard GigIndia Pro Plan ID from Razorpay Dashboard
 const PRO_PLAN_ID = process.env.RAZORPAY_PRO_PLAN_ID || 'plan_O8I9G4K2H0L3';
 
 export const SubscriptionService = {
@@ -28,7 +28,7 @@ export const SubscriptionService = {
       customer_notify: 1 as 0 | 1 | boolean,
       notes: {
         userId: userId,
-        tier: 'BharatGig Pro'
+        tier: 'GigIndia Pro'
       }
     };
 
@@ -63,38 +63,66 @@ export const SubscriptionService = {
    * Processes subscription events from Razorpay Webhook.
    */
   handleWebhookEvent: async (event: any) => {
-    const { payload, event: eventType } = event;
-    const subData = payload.subscription.entity;
-    const userId = subData.notes.userId;
-
-    if (!userId) return;
-
-    let subStatus = subData.status;
-
-    // Update Subscription Record
-    await Subscription.findOneAndUpdate(
-      { subscriptionId: subData.id },
-      { 
-        status: subStatus,
-        currentStart: new Date(subData.current_start * 1000),
-        currentEnd: new Date(subData.current_end * 1000)
+    try {
+      const { payload, event: eventType } = event;
+      if (!payload.subscription) {
+        console.warn(`[SUBSCRIPTION] Received non-subscription event: ${eventType}`);
+        return;
       }
-    );
 
-    // Update User Profile Status
-    const userStatus = (subStatus === 'active') ? 'pro' : 'free';
-    const userBadge = (subStatus === 'active') ? 'BharatGig Pro' : '';
+      const subData = payload.subscription.entity;
+      const userId = subData.notes?.userId;
 
-    if (subStatus === 'active') {
-       const planPrice = 299; // Hardcoded default for current BharatGig Pro
-       await CoinService.addCoins(userId, Math.floor(planPrice * 1.5), 'PLAN_PURCHASE_AWARD');
+      if (!userId) {
+        console.error(`[SUBSCRIPTION] Missing userId in subscription notes for ID: ${subData.id}`);
+        // Try to find the user via the saved subscription record
+        const existingSub = await Subscription.findOne({ subscriptionId: subData.id });
+        if (!existingSub) {
+          console.error(`[SUBSCRIPTION] Could not find local record for ID: ${subData.id}`);
+          return;
+        }
+      }
+
+      const subStatus = subData.status;
+
+      // Update Subscription Record
+      const updatedSub = await Subscription.findOneAndUpdate(
+        { subscriptionId: subData.id },
+        { 
+          status: subStatus,
+          currentStart: new Date(subData.current_start * 1000),
+          currentEnd: new Date(subData.current_end * 1000)
+        },
+        { new: true }
+      );
+
+      if (!updatedSub) {
+        console.warn(`[SUBSCRIPTION] Local record for ${subData.id} was not created yet. Syncing now.`);
+      }
+
+      // Update User Profile Status
+      const finalUserId = userId || updatedSub?.userId;
+      const userStatus = (subStatus === 'active') ? 'pro' : 'free';
+      const userBadge = (subStatus === 'active') ? 'GigIndia Pro' : '';
+
+      if (subStatus === 'active' && finalUserId) {
+         // Prevent double-crediting if already active
+         const user = await User.findById(finalUserId);
+         if (user && user.subscriptionStatus !== 'pro') {
+           const planPrice = 299; 
+           await CoinService.addCoins(finalUserId.toString(), Math.floor(planPrice * 1.5), 'PLAN_PURCHASE_AWARD');
+         }
+      }
+
+      if (finalUserId) {
+        await User.findByIdAndUpdate(finalUserId, {
+          subscriptionStatus: userStatus,
+          badge: userBadge
+        });
+        console.log(`[SUBSCRIPTION] ${eventType} -> Status updated for ${finalUserId}: ${subStatus}`);
+      }
+    } catch (err: any) {
+      console.error(`[SUBSCRIPTION] Error handling webhook ${event?.event}:`, err.message);
     }
-
-    await User.findByIdAndUpdate(userId, {
-      subscriptionStatus: userStatus,
-      badge: userBadge
-    });
-
-    console.log(`[SUBSCRIPTION] Status updated for ${userId}: ${subStatus}`);
   }
 };

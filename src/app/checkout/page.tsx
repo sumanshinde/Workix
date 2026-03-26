@@ -48,13 +48,20 @@ function CheckoutContent() {
         freelancerId: freelancerId || ''
       });
 
+      let orderData = data;
+      if (data.order) {
+        orderData = data.order;
+      } else if (data.data && data.data.order) {
+        orderData = data.data.order;
+      }
+
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY || 'rzp_test_placeholder',
-        amount: data.amount,
-        currency: data.currency,
-        name: 'BharatGig Escrow',
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'GigIndia Escrow',
         description: 'Secure Project Payment',
-        order_id: data.orderId,
+        order_id: orderData.id || orderData.orderId || data.orderId,
         handler: async (response: any) => {
           try {
             await paymentsAPI.verify(response);

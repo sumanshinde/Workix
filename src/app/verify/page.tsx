@@ -67,7 +67,7 @@ export default function VerificationPage() {
                       <ShieldCheck size={32} className="text-blue-600" />
                    </div>
                    <h1 className="text-3xl font-semibold text-[#111827] tracking-tight">Trust Verification</h1>
-                   <p className="text-gray-500 font-medium">Get the <span className="text-blue-600 font-bold">BharatGig Verified</span> badge to gain 3x trust.</p>
+                   <p className="text-gray-500 font-medium">Get the <span className="text-blue-600 font-bold">GigIndia Verified</span> badge to gain 3x trust.</p>
                 </div>
 
                 {/* Progress Indicators */}

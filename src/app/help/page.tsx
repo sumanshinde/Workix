@@ -25,7 +25,7 @@ export default function HelpCenterPage() {
   const faqs = [
     { q: 'How does Lead Lock work?', a: 'Lead Lock is our proprietary escrow system where payments are held securely until project completion.' },
     { q: 'How do I get verified?', a: 'Visit our /verify page to upload your identity documents. Verification takes 24-48 hours.' },
-    { q: 'What is the platform fee?', a: 'BharatGig charges a flat 5% service fee on successful project completions.' },
+    { q: 'What is the platform fee?', a: 'GigIndia charges a flat 5% service fee on successful project completions.' },
     { q: 'Can I withdraw anytime?', a: 'Funds are available for withdrawal 10 days after project approval.' },
   ];
 

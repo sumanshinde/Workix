@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
+import { reviewsAPI } from '@/services/api';
 
 export default function ReviewList({ userId }: { userId: string }) {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -33,15 +34,10 @@ export default function ReviewList({ userId }: { userId: string }) {
   const fetchReviews = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/reviews/${userId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setReviews(data.length > 0 ? data : mockReviews);
-      } else {
-        setReviews(mockReviews);
-      }
+      const data = await reviewsAPI.getForUser(userId);
+      setReviews(data && data.length > 0 ? data : mockReviews);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load reviews:', err);
       setReviews(mockReviews);
     }
     setLoading(false);

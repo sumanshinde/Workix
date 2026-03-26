@@ -1,10 +1,10 @@
 export const BRANDING = {
-  name: 'BharatGig',
-  altName: 'BharatGig',
-  displayName: 'BharatGig',
-  shortName: 'BG',
-  companyName: 'BharatGig Solutions',
-  logoZap: true,
+  name: 'GigIndia',
+  altName: 'GigIndia',
+  displayName: 'GigIndia',
+  shortName: 'GI',
+  companyName: 'GigIndia Solutions',
+  logoZap: false,
   theme: {
     bg: '#ffffff',
     surface: '#ffffff',
@@ -24,8 +24,8 @@ export const BRANDING = {
     textMuted: '#6b7280',
   },
   seo: {
-    title: 'BharatGig — India\'s Premium AI-Powered Freelance Marketplace',
-    description: 'Connect with verified professionals and high-quality projects. BharatGig is the leading platform for elite freelance talent in India.',
+    title: 'GigIndia — India\'s Premium Freelance Marketplace',
+    description: 'Connect with verified professionals and high-quality projects. GigIndia is the leading platform for elite freelance talent in India.',
   },
   // Pay-as-you-go marketplace pricing defaults (in INR)
   marketplace: {

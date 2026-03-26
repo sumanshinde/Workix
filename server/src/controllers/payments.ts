@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Escrow from '../models/Escrow';
 import Transaction from '../models/Transaction';
 import User from '../models/User';
-import { createRazorpayOrder, verifyPaymentSignature, initiateRefund } from '../services/paymentService';
+import { createRazorpayOrder, verifyPaymentSignature, initiateRefund, fetchRazorpayOrder } from '../services/paymentService';
 import { calculateServiceFees } from '../services/feeService';
 import { createNotification } from '../services/notificationService';
 import { sendEmail } from '../services/emailService';
@@ -63,8 +63,12 @@ export const verifyPayment = async (req: Request, res: Response) => {
     const isValid = verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
     if (!isValid) return res.status(400).json({ message: 'Invalid payment signature' });
 
+    const existingEscrow = await Escrow.findOne({ orderId: razorpay_order_id });
+    if (!existingEscrow) return res.status(404).json({ message: 'Escrow record not found' });
+    if (existingEscrow.status === 'escrowed') return res.status(200).json({ message: 'Payment already processed' });
+
     const escrow = await Escrow.findOneAndUpdate(
-      { orderId: razorpay_order_id },
+      { orderId: razorpay_order_id, status: { $ne: 'escrowed' } },
       { paymentId: razorpay_payment_id, status: 'escrowed', paymentStatus: 'captured' },
       { new: true }
     ).populate('clientId freelancerId');
@@ -173,8 +177,8 @@ export const releasePayment = async (req: Request, res: Response) => {
     // EMAIL ALERTS
     await sendEmail(
       freelancer.email,
-      'Payment Received - BharatGig',
-      `Congratulations! ₹${escrow.netFreelancerAmount / 100} has been credited to your BharatGig wallet.`
+      'Payment Received - GigIndia',
+      `Congratulations! ₹${escrow.netFreelancerAmount / 100} has been credited to your GigIndia wallet.`
     );
 
     res.json({ 
@@ -211,18 +215,53 @@ export const refundPayment = async (req: Request, res: Response) => {
 
 export const createGlobalPayment = async (req: Request, res: Response) => {
   try {
-    const { amount, currency, country } = req.body;
-    const userId = (req as any).user.id;
+    const { amount, currency, country, planId } = req.body;
+    const userId = (req as any).user?.id || (req as any).userId;
 
     if (country === 'IN' || currency === 'INR') {
-      const rzpOrder = await createRazorpayOrder(amount, `receipt_${Date.now()}`);
+      const notes = planId ? { planId, userId: String(userId) } : { userId: String(userId) };
+      const rzpOrder = await createRazorpayOrder(amount, `receipt_${Date.now()}`, notes);
       return res.json({ gateway: 'razorpay', order: rzpOrder });
     } else {
       const stripeIntent = await createStripeIntent(amount, currency);
       return res.json({ gateway: 'stripe', clientSecret: stripeIntent.client_secret, amount, currency });
     }
   } catch (err: any) {
-    res.status(500).json({ message: 'Global payment failed', error: err.message });
+    console.error('CREATE GLOBAL PAYMENT ERROR:', err);
+    res.status(500).json({ message: 'Global payment failed', error: err.message || err.description || err });
+  }
+};
+
+export const verifyGlobalPayment = async (req: Request, res: Response) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const userId = (req as any).user?.id || (req as any).userId;
+
+    const isValid = verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+    if (!isValid) return res.status(400).json({ message: 'Invalid payment signature' });
+
+    // Fetch order to get the planId from notes
+    const rzpOrder = await fetchRazorpayOrder(razorpay_order_id);
+    const planId = (rzpOrder as any).notes?.planId;
+
+    if (planId) {
+      // Logic to update user subscription
+      let creditsToAdd = 0;
+      if (planId === 'pro') creditsToAdd = 100;
+      else if (planId === 'premium') creditsToAdd = 500;
+
+      await User.findByIdAndUpdate(userId, {
+        subscriptionStatus: planId,
+        $inc: { availableCredits: creditsToAdd }
+      });
+      
+      await createNotification(userId, 'Plan Upgraded', `Successfully upgraded your plan to ${planId.toUpperCase()}!`, 'system', '/dashboard/subscriptions');
+    }
+
+    res.json({ success: true, message: 'Global payment verified successfully.' });
+  } catch (err: any) {
+    console.error('VERIFY GLOBAL PAYMENT ERROR:', err);
+    res.status(500).json({ message: 'Global verification failed', error: err.message });
   }
 };
 
@@ -242,8 +281,10 @@ export const withdrawFunds = async (req: Request, res: Response) => {
       type: 'withdrawal',
       amount: amount * 100,
       currency: wallet.currency,
-      status: 'completed'
+      status: 'pending' // Admin must approve
     });
+    
+    await createNotification(userId, 'Withdrawal Requested', `Your withdrawal of ₹${amount} is being processed.`, 'system', '/dashboard/wallet');
     res.json({ success: true, balance: wallet.balance });
   } catch (err: any) {
     res.status(500).json({ message: 'Withdrawal failed', error: err.message });

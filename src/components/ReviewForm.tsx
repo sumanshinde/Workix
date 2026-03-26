@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Star, Send, X } from 'lucide-react';
+import { reviewsAPI } from '@/services/api';
 
 interface ReviewFormProps {
   jobId: string;
@@ -21,23 +22,17 @@ export default function ReviewForm({ jobId, fromUserId, toUserId, onSuccess, onC
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobId,
-          fromUserId,
-          toUserId,
-          rating,
-          comment,
-          role: 'client'
-        })
+      await reviewsAPI.create({
+        jobId,
+        fromUserId,
+        toUserId,
+        rating,
+        comment,
+        role: 'client'
       });
-      if (res.ok) {
-        onSuccess();
-      }
+      onSuccess();
     } catch (err) {
-      console.error(err);
+      console.error('Failed to submit review:', err);
     }
     setLoading(false);
   };

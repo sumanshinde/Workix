@@ -15,11 +15,18 @@ export default function ReferralPage() {
     const fetchStats = async () => {
       try {
         const stored = localStorage.getItem('user');
-        const userId = stored ? JSON.parse(stored).id : 'anonymous';
+        if (!stored) throw new Error('Not logged in');
+        const userId = JSON.parse(stored).id;
         const res = await referralAPI.getStats(userId);
         setData(res);
       } catch (err) {
-        console.error(err);
+        console.error('Referral Stats Error:', err);
+        // Fallback for logged out users or API errors so the page still renders
+        setData({
+           referralCode: 'LOGIN-TO-GET-CODE',
+           stats: { totalEarned: 0, completed: 0, pending: 0 },
+           invites: []
+        });
       } finally {
         setLoading(false);
       }
@@ -35,7 +42,7 @@ export default function ReferralPage() {
   };
 
   const shareOnWhatsApp = () => {
-    const text = `Join BharatGig with my code ${data.referralCode} and get a ₹50 bonus! 🚀 ${window.location.origin}/signup?ref=${data.referralCode}`;
+    const text = `Join GigIndia with my code ${data.referralCode} and get a ₹50 bonus! 🚀 ${window.location.origin}/signup?ref=${data.referralCode}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -58,7 +65,7 @@ export default function ReferralPage() {
                    <span className="text-blue-600 italic">EARN ₹100.</span>
                 </h1>
                 <p className="text-lg font-medium text-slate-500 leading-relaxed max-w-md">
-                   Grow BharatGig and get rewarded. You get ₹100 for every successful referral, and they get ₹50 bonus. Plus, earn from their referrals too!
+                   Grow GigIndia and get rewarded. You get ₹100 for every successful referral, and they get ₹50 bonus. Plus, earn from their referrals too!
                 </p>
                 
                 <div className="p-1 bg-white border border-slate-100 rounded-3xl shadow-xl shadow-slate-200/50 flex flex-col md:flex-row items-center gap-2">

@@ -100,7 +100,7 @@ export default function MatchingFreelancers({ jobId }: { jobId: string }) {
                       <h4 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">
                          {item.freelancer.name}
                       </h4>
-                      {item.freelancer.badge === 'BharatGig Pro' && (
+                      {item.freelancer.badge === 'GigIndia Pro' && (
                          <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">PRO</span>
                       )}
                    </div>

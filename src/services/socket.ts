@@ -13,7 +13,7 @@ class SocketService {
       });
 
       this.socket.on('connect', () => {
-        console.log('Connected to BharatGig Real-time Cluster');
+        console.log('Connected to GigIndia Real-time Cluster');
         this.socket.emit('join_chat', userId);
       });
     }

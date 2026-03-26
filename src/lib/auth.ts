@@ -7,16 +7,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: (() => {
-        const id = process.env.GOOGLE_CLIENT_ID ?? '';
-        console.log(`[AUTH_DEBUG] Google Client ID loaded: ${id ? id.slice(0, 5) + '...' + id.slice(-10) : 'MISSING'}`);
-        return id;
-      })(),
-      clientSecret: (() => {
-        const secret = process.env.GOOGLE_CLIENT_SECRET ?? '';
-        if (!secret) console.warn('[AUTH_DEBUG] WARNING: Google Client Secret is MISSING');
-        return secret;
-      })(),
+      clientId:     process.env.GOOGLE_CLIENT_ID     ?? '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
       authorization: {
         params: {
           scope: 'openid email profile',
@@ -71,17 +63,7 @@ export const authOptions: NextAuthOptions = {
           if (err.message && err.message !== 'fetch failed') {
             throw new Error(err.message);
           }
-          // 8. Backend safety: Fallback mock authentication if API fails
-          console.warn('Backend connection failed, using fallback mock authentication');
-          if (credentials.email === 'test@gmail.com') {
-            return {
-              id: 'mock-12345',
-              name: 'Test Setup User',
-              email: credentials.email,
-              role: 'freelancer',
-              backendToken: 'mock_fallback_token_889988'
-            } as any;
-          }
+          throw new Error('Our identity servers are temporary unavailable. Please try again in 5 minutes.');
         }
         return null;
       },
@@ -143,5 +125,5 @@ export const authOptions: NextAuthOptions = {
   },
   pages:   { signIn: '/login', error: '/login' },
   session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
-  secret:  process.env.NEXTAUTH_SECRET ?? 'bharatgig-dev-secret',
+  secret:  process.env.NEXTAUTH_SECRET,
 };

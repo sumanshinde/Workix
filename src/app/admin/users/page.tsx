@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Filter, MoreVertical, ShieldAlert, 
   CheckCircle2, Ban, Mail, ExternalLink,
@@ -8,18 +8,38 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui';
-
-const DUMMY_USERS = [
-  { id: '1', name: 'Arjun Mehra', email: 'arjun@workix.com', role: 'Freelancer', status: 'Active', joined: 'Oct 12, 2023', verified: true },
-  { id: '2', name: 'Sonal Verma', email: 'sonal@design.io', role: 'Freelancer', status: 'Banned', joined: 'Nov 04, 2023', verified: false },
-  { id: '3', name: 'Rahul Gupta', email: 'rahul@techcorp.in', role: 'Client', status: 'Active', joined: 'Dec 01, 2023', verified: true },
-  { id: '4', name: 'Priya Singh', email: 'priya@freelance.org', role: 'Freelancer', status: 'Pending', joined: 'Jan 15, 2024', verified: false },
-  { id: '5', name: 'Amit Shah', email: 'amit@business.com', role: 'Client', status: 'Active', joined: 'Feb 10, 2024', verified: true },
-];
+import { platformAPI } from '@/services/api';
 
 export default function UserManagement() {
+  const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await platformAPI.getAllUsers();
+      if (res) setUsers(res as any[]);
+    } catch (err) {
+      console.error('Failed to fetch users', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = u.name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === 'All' || 
+                         (filter === 'Freelancers' && u.role === 'freelancer') || 
+                         (filter === 'Clients' && u.role === 'client') || 
+                         (filter === 'Banned' && u.isBlocked);
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <div className="p-8 lg:p-12 space-y-8 max-w-7xl mx-auto">
@@ -64,6 +84,9 @@ export default function UserManagement() {
       {/* User Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
+          {loading ? (
+             <div className="p-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">Synchronizing User Matrix...</div>
+          ) : (
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-200">
@@ -75,39 +98,39 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {DUMMY_USERS.map((user) => (
-                <tr key={user.id} className="group hover:bg-gray-50/50 transition-colors">
+              {filteredUsers.map((user) => (
+                <tr key={user._id || user.id} className="group hover:bg-gray-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10-lg shrink-0">
-                         {user.name.charAt(0)}
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-500">
+                         {user.name?.charAt(0) || 'U'}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                            <p className="text-gray-900 font-bold text-sm truncate">{user.name}</p>
-                           {user.verified && <ShieldCheck size={14} className="text-blue-500" />}
+                           {user.isKycVerified && <ShieldCheck size={14} className="text-blue-500" />}
                         </div>
                         <p className="text-gray-500 text-xs font-medium truncate">{user.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                     <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 text-xs font-medium">
+                     <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 text-xs font-medium capitalize">
                         {user.role}
                      </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                       <div className={`w-2 h-2 rounded-full ${user.status === 'Active' ? 'bg-emerald-500' : user.status === 'Banned' ? 'bg-rose-500' : 'bg-amber-500'}`} />
-                       <span className="text-gray-700 font-medium text-sm">{user.status}</span>
+                       <div className={`w-2 h-2 rounded-full ${user.isBlocked ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                       <span className="text-gray-700 font-medium text-sm">{user.isBlocked ? 'Banned' : 'Active'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-gray-900 font-medium">{user.joined}</p>
+                    <p className="text-gray-900 font-medium">{new Date(user.createdAt).toLocaleDateString()}</p>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-3">
-                       <button className="p-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-blue-600 rounded-lg transition-colors" title="Edit Profile"><Mail size={16} /></button>
+                       <button className="p-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-blue-600 rounded-lg transition-colors" title="Contact"><Mail size={16} /></button>
                        <button className="p-2 bg-white border border-gray-200 hover:bg-red-50 text-gray-500 hover:text-red-600 rounded-lg transition-colors" title="Restrict Access"><Ban size={16} /></button>
                        <button className="p-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-gray-900 rounded-lg transition-colors"><MoreVertical size={16} /></button>
                     </div>
@@ -116,20 +139,12 @@ export default function UserManagement() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
-        {/* Pagination */}
+        {/* Pagination placeholder */}
         <div className="px-6 py-4 bg-white border-t border-gray-200 flex items-center justify-between">
-          <p className="text-gray-500 text-xs font-medium">Viewing <span className="text-gray-900 font-bold">1 - 5</span> of <span className="text-gray-900 font-bold">1,248</span> users</p>
-          <div className="flex items-center gap-3">
-            <button className="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 text-gray-400 rounded-lg cursor-not-allowed opacity-50"><ChevronLeft size={16} /></button>
-            <div className="flex items-center gap-1">
-              <span className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-900 font-bold rounded-lg text-xs">1</span>
-              <span className="w-8 h-8 flex items-center justify-center text-gray-500 font-medium hover:bg-gray-50 hover:text-gray-900 cursor-pointer rounded-lg text-xs transition-colors">2</span>
-              <span className="w-8 h-8 flex items-center justify-center text-gray-500 font-medium hover:bg-gray-50 hover:text-gray-900 cursor-pointer rounded-lg text-xs transition-colors">3</span>
-            </div>
-            <button className="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"><ChevronRight size={16} /></button>
-          </div>
+          <p className="text-gray-500 text-xs font-medium">Viewing <span className="text-gray-900 font-bold">{filteredUsers.length}</span> user(s)</p>
         </div>
       </div>
     </div>

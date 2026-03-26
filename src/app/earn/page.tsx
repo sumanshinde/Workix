@@ -128,7 +128,7 @@ export default function EarnLandingPage() {
                  <div className="section-label bg-blue-500/10 text-blue-400 border-blue-500/20">Growth</div>
                  <h2 className="text-4xl font-bold text-white leading-tight tracking-tight">Focus on your craft.<br /><span className="text-blue-500">We handle the rest.</span></h2>
                  <p className="text-sm text-slate-400 font-medium leading-relaxed">
-                   BharatGig provides tools for contract management, automated invoicing, and a secure payment pipeline so you never hunt for a payment again.
+                   GigIndia provides tools for contract management, automated invoicing, and a secure payment pipeline so you never hunt for a payment again.
                  </p>
                  <Button onClick={handleCTA} className="rounded-lg bg-white text-blue-900 hover:bg-gray-100 font-bold shadow-sm shadow-white/5">
                    Apply for Access
