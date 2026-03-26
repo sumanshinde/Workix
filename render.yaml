@@ -25,7 +25,7 @@ services:
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://workix-api-cluster.onrender.com/api
+        value: https://workix-api-cluster.onrender.com
       - key: NEXTAUTH_URL
         value: https://workix-1.onrender.com
       - key: NEXTAUTH_SECRET
